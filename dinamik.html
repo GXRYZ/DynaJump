@@ -1,0 +1,2853 @@
+<html>
+
+<head>
+    <title>Dyna Game</title>
+    <meta property="og:type" content="article">
+    <meta property="og:description">
+    
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            background: #000000;
+            /* Main background color for your game */
+            font-family: 'Open Sans', sans-serif;
+            position: relative;
+            /* Allow absolute positioning of the button and slider */
+        }
+    
+        /* Positioning the button in the top right corner */
+        .button-container {
+            position: absolute;
+            top: 20px;
+            /* Adjust as needed for spacing from top */
+            right: 20px;
+            /* Adjust as needed for spacing from right */
+        }
+    
+        /* Positioning the volume slider in the top left corner */
+        .slider-container {
+            position: absolute;
+            top: 20px;
+            /* Adjust as needed for spacing from top */
+            left: 20px;
+            /* Adjust as needed for spacing from left */
+            width: 150px;
+            /* Set width for the slider */
+        }
+
+        .glow-on-hover-slider {
+            padding: 7px 20px; /* Adjust padding as needed to wrap around the slider */
+            border: none;
+            outline: none;
+            color: #fff;
+            background: #ff0000; /* Button color */
+            cursor: pointer;
+            position: relative;
+            z-index: 0;
+            border-radius: 10px;
+            display: inline-block; /* Adjusts size dynamically based on content */
+        }
+
+        .glow-on-hover-slider:before {
+            content: '';
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            background-size: 400%;
+            z-index: -1;
+            filter: blur(5px);
+            width: calc(100% + 4px);
+            height: calc(100% + 4px);
+            animation: glowing 20s linear infinite;
+            opacity: 0;
+            transition: opacity .3s ease-in-out;
+            border-radius: 10px;
+        }
+
+        .glow-on-hover-slider:active {
+            color: #000;
+        }
+    
+        .glow-on-hover-slider:active:after {
+            background:color:#000
+        }
+    
+        .glow-on-hover-slider:hover:before {
+            opacity: 1;
+        }
+    
+        .glow-on-hover-slider:after {
+            z-index: -1;
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            left: 0;
+            top: 0;
+            border-radius: 10px;
+        }
+    
+        .glow-on-hover {
+            width: 220px;
+            height: 50px;
+            border: none;
+            outline: none;
+            color: #fff;
+            background: #ff0000;
+            /* Button color */
+            cursor: pointer;
+            position: relative;
+            z-index: 0;
+            border-radius: 10px;
+        }
+    
+        .glow-on-hover:before {
+            content: '';
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            background-size: 400%;
+            z-index: -1;
+            filter: blur(5px);
+            width: calc(100% + 4px);
+            height: calc(100% + 4px);
+            animation: glowing 20s linear infinite;
+            opacity: 0;
+            transition: opacity .3s ease-in-out;
+            border-radius: 10px;
+        }
+    
+        .glow-on-hover:active {
+            color: #000;
+        }
+    
+        .glow-on-hover:active:after {
+            background: transparent;
+        }
+    
+        .glow-on-hover:hover:before {
+            opacity: 1;
+        }
+    
+        .glow-on-hover:after {
+            z-index: -1;
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            left: 0;
+            top: 0;
+            border-radius: 10px;
+        }
+    
+        @keyframes glowing {
+            0% {
+                background-position: 0 0;
+            }
+    
+            50% {
+                background-position: 400% 0;
+            }
+    
+            100% {
+                background-position: 0 0;
+            }
+        }
+    
+        .slider {
+            width: 100%;
+            /* Make slider full width of its container */
+        }
+    </style>
+
+    <!--script type="text/javascript" src="a.js"></script-->
+
+    <script type="text/javascript">
+        function hideClass(name) {
+            var myClasses = document.querySelectorAll(name),
+                i = 0,
+                l = myClasses.length;
+
+            for (i; i < l; i++) {
+                myClasses[i].style.display = 'none';
+            }
+        }
+
+        // Copyright (c) 2014 The Chromium Authors. All rights reserved.
+        // Use of this source code is governed by a BSD-style license that can be
+        // found in the LICENSE file.
+        (function () {
+            'use strict';
+            /**
+            * T-Rex runner.
+            * @param {string} outerContainerId Outer containing element id.
+            * @param {object} opt_config
+            * @constructor
+            * @export
+            */
+            function Runner(outerContainerId, opt_config) {
+                // Singleton
+                if (Runner.instance_) {
+                    return Runner.instance_;
+                }
+                Runner.instance_ = this;
+                this.outerContainerEl = document.querySelector(outerContainerId);
+                this.containerEl = null;
+                this.detailsButton = this.outerContainerEl.querySelector('#details-button');
+                this.config = opt_config || Runner.config;
+                this.dimensions = Runner.defaultDimensions;
+                this.canvas = null;
+                this.canvasCtx = null;
+                this.tRex = null;
+                this.distanceMeter = null;
+                this.distanceRan = 0;
+                this.highestScore = 0;
+                this.time = 0;
+                this.runningTime = 0;
+                this.msPerFrame = 1000 / FPS;
+                this.currentSpeed = this.config.SPEED;
+                this.obstacles = [];
+                this.started = false;
+                this.activated = false;
+                this.crashed = false;
+                this.paused = false;
+                this.resizeTimerId_ = null;
+                this.playCount = 0;
+                // Sound FX.
+                this.audioBuffer = null;
+                this.soundFx = {};
+                // Global web audio context for playing sounds.
+                this.audioContext = null;
+                // Images.
+                this.images = {};
+                this.imagesLoaded = 0;
+                this.loadImages();
+            }
+            window['Runner'] = Runner;
+            /**
+            * Default game width.
+            * @const
+            */
+            var DEFAULT_WIDTH = 600;
+            /**
+            * Frames per second.
+            * @const
+            */
+            var FPS = 60;
+            /** @const */
+            var IS_HIDPI = window.devicePixelRatio > 1;
+            /** @const */
+            var IS_IOS =
+                window.navigator.userAgent.indexOf('UIWebViewForStaticFileContent') > -1;
+            /** @const */
+            var IS_MOBILE = window.navigator.userAgent.indexOf('Mobi') > -1 || IS_IOS;
+            /** @const */
+            var IS_TOUCH_ENABLED = 'ontouchstart' in window;
+            /**
+            * Default game configuration.
+            * @enum {number}
+            */
+            Runner.config = {
+                ACCELERATION: 0.001,
+                BG_CLOUD_SPEED: 0.2,
+                BOTTOM_PAD: 10,
+                CLEAR_TIME: 3000,
+                CLOUD_FREQUENCY: 0.5,
+                GAMEOVER_CLEAR_TIME: 750,
+                GAP_COEFFICIENT: 0.6,
+                GRAVITY: 0.6,
+                INITIAL_JUMP_VELOCITY: 12,
+                MAX_CLOUDS: 6,
+                MAX_OBSTACLE_LENGTH: 3,
+                MAX_SPEED: 12,
+                MIN_JUMP_HEIGHT: 35,
+                MOBILE_SPEED_COEFFICIENT: 1.2,
+                RESOURCE_TEMPLATE_ID: 'audio-resources',
+                SPEED: 6,
+                SPEED_DROP_COEFFICIENT: 3
+            };
+            /**
+            * Default dimensions.
+            * @enum {string}
+            */
+            Runner.defaultDimensions = {
+                WIDTH: DEFAULT_WIDTH,
+                HEIGHT: 150
+            };
+            /**
+            * CSS class names.
+            * @enum {string}
+            */
+            Runner.classes = {
+                CANVAS: 'runner-canvas',
+                CONTAINER: 'runner-container',
+                CRASHED: 'crashed',
+                ICON: 'icon-offline',
+                TOUCH_CONTROLLER: 'controller'
+            };
+            /**
+            * Image source urls.
+            * @enum {array.<object>}
+            */
+            Runner.imageSources = {
+                LDPI: [
+                    { name: 'CACTUS_LARGE', id: '1x-obstacle-large' },
+                    { name: 'CACTUS_SMALL', id: '1x-obstacle-small' },
+                    { name: 'CLOUD', id: '1x-cloud' },
+                    { name: 'HORIZON', id: '1x-horizon' },
+                    { name: 'RESTART', id: '1x-restart' },
+                    { name: 'TEXT_SPRITE', id: '1x-text' },
+                    { name: 'TREX', id: '1x-trex' }
+                ],
+                HDPI: [
+                    { name: 'CACTUS_LARGE', id: '2x-obstacle-large' },
+                    { name: 'CACTUS_SMALL', id: '2x-obstacle-small' },
+                    { name: 'CLOUD', id: '2x-cloud' },
+                    { name: 'HORIZON', id: '2x-horizon' },
+                    { name: 'RESTART', id: '2x-restart' },
+                    { name: 'TEXT_SPRITE', id: '2x-text' },
+                    { name: 'TREX', id: '2x-trex' }
+                ]
+            };
+            /**
+            * Sound FX. Reference to the ID of the audio tag on interstitial page.
+            * @enum {string}
+            */
+            Runner.sounds = {
+                BUTTON_PRESS: 'offline-sound-press',
+                HIT: 'offline-sound-hit',
+                SCORE: 'offline-sound-reached',
+            };
+            /**
+            * Key code mapping.
+            * @enum {object}
+            */
+            Runner.keycodes = {
+                JUMP: { '38': 1, '32': 1 }, // Up, spacebar
+                DUCK: { '40': 1 }, // Down
+                RESTART: { '13': 1 } // Enter
+            };
+            /**
+            * Runner event names.
+            * @enum {string}
+            */
+            Runner.events = {
+                ANIM_END: 'webkitAnimationEnd',
+                CLICK: 'click',
+                KEYDOWN: 'keydown',
+                KEYUP: 'keyup',
+                MOUSEDOWN: 'mousedown',
+                MOUSEUP: 'mouseup',
+                RESIZE: 'resize',
+                TOUCHEND: 'touchend',
+                TOUCHSTART: 'touchstart',
+                VISIBILITY: 'visibilitychange',
+                BLUR: 'blur',
+                FOCUS: 'focus',
+                LOAD: 'load'
+            };
+            Runner.prototype = {
+                /**
+                * Setting individual settings for debugging.
+                * @param {string} setting
+                * @param {*} value
+                */
+                updateConfigSetting: function (setting, value) {
+                    if (setting in this.config && value != undefined) {
+                        this.config[setting] = value;
+                        switch (setting) {
+                            case 'GRAVITY':
+                            case 'MIN_JUMP_HEIGHT':
+                            case 'SPEED_DROP_COEFFICIENT':
+                                this.tRex.config[setting] = value;
+                                break;
+                            case 'INITIAL_JUMP_VELOCITY':
+                                this.tRex.setJumpVelocity(value);
+                                break;
+                            case 'SPEED':
+                                this.setSpeed(value);
+                                break;
+                        }
+                    }
+                },
+                /**
+                * Load and cache the image assets from the page.
+                */
+                loadImages: function () {
+                    var imageSources = IS_HIDPI ? Runner.imageSources.HDPI :
+                        Runner.imageSources.LDPI;
+                    var numImages = imageSources.length;
+                    for (var i = numImages - 1; i >= 0; i--) {
+                        var imgSource = imageSources[i];
+                        this.images[imgSource.name] = document.getElementById(imgSource.id);
+                    }
+                    this.init();
+                },
+                /**
+                * Load and decode base 64 encoded sounds.
+                */
+                loadSounds: function () {
+                    if (!IS_IOS) {
+                        this.audioContext = new AudioContext();
+                        var resourceTemplate =
+                            document.getElementById(this.config.RESOURCE_TEMPLATE_ID).content;
+                        for (var sound in Runner.sounds) {
+                            var soundSrc =
+                                resourceTemplate.getElementById(Runner.sounds[sound]).src;
+                            soundSrc = soundSrc.substr(soundSrc.indexOf(',') + 1);
+                            var buffer = decodeBase64ToArrayBuffer(soundSrc);
+                            // Async, so no guarantee of order in array.
+                            this.audioContext.decodeAudioData(buffer, function (index, audioData) {
+                                this.soundFx[index] = audioData;
+                            }.bind(this, sound));
+                        }
+                    }
+                },
+                /**
+                * Sets the game speed. Adjust the speed accordingly if on a smaller screen.
+                * @param {number} opt_speed
+                */
+                setSpeed: function (opt_speed) {
+                    var speed = opt_speed || this.currentSpeed;
+                    // Reduce the speed on smaller mobile screens.
+                    if (this.dimensions.WIDTH < DEFAULT_WIDTH) {
+                        var mobileSpeed = speed * this.dimensions.WIDTH / DEFAULT_WIDTH *
+                            this.config.MOBILE_SPEED_COEFFICIENT;
+                        this.currentSpeed = mobileSpeed > speed ? speed : mobileSpeed;
+                    } else if (opt_speed) {
+                        this.currentSpeed = opt_speed;
+                    }
+                },
+                /**
+                * Game initialiser.
+                */
+                init: function () {
+                    // Hide the static icon.
+                    //document.querySelector('.' + Runner.classes.ICON).style.visibility = 'hidden';
+                    this.adjustDimensions();
+                    this.setSpeed();
+                    this.containerEl = document.createElement('div');
+                    this.containerEl.className = Runner.classes.CONTAINER;
+                    // Player canvas container.
+                    this.canvas = createCanvas(this.containerEl, this.dimensions.WIDTH,
+                        this.dimensions.HEIGHT, Runner.classes.PLAYER);
+                    this.canvasCtx = this.canvas.getContext('2d');
+                    this.canvasCtx.fillStyle = '#f7f7f7';
+                    this.canvasCtx.fill();
+                    Runner.updateCanvasScaling(this.canvas);
+                    // Horizon contains clouds, obstacles and the ground.
+                    this.horizon = new Horizon(this.canvas, this.images, this.dimensions,
+                        this.config.GAP_COEFFICIENT);
+                    // Distance meter
+                    this.distanceMeter = new DistanceMeter(this.canvas,
+                        this.images.TEXT_SPRITE, this.dimensions.WIDTH);
+                    // Draw t-rex
+                    this.tRex = new Trex(this.canvas, this.images.TREX);
+                    this.outerContainerEl.appendChild(this.containerEl);
+                    if (IS_MOBILE) {
+                        this.createTouchController();
+                    }
+                    this.startListening();
+                    this.update();
+                    window.addEventListener(Runner.events.RESIZE,
+                        this.debounceResize.bind(this));
+                },
+                /**
+                * Create the touch controller. A div that covers whole screen.
+                */
+                createTouchController: function () {
+                    this.touchController = document.createElement('div');
+                    this.touchController.className = Runner.classes.TOUCH_CONTROLLER;
+                },
+                /**
+                * Debounce the resize event.
+                */
+                debounceResize: function () {
+                    if (!this.resizeTimerId_) {
+                        this.resizeTimerId_ =
+                            setInterval(this.adjustDimensions.bind(this), 250);
+                    }
+                },
+                /**
+                * Adjust game space dimensions on resize.
+                */
+                adjustDimensions: function () {
+                    clearInterval(this.resizeTimerId_);
+                    this.resizeTimerId_ = null;
+                    var boxStyles = window.getComputedStyle(this.outerContainerEl);
+                    var padding = Number(boxStyles.paddingLeft.substr(0,
+                        boxStyles.paddingLeft.length - 2));
+                    this.dimensions.WIDTH = this.outerContainerEl.offsetWidth - padding * 2;
+                    // Redraw the elements back onto the canvas.
+                    if (this.canvas) {
+                        this.canvas.width = this.dimensions.WIDTH;
+                        this.canvas.height = this.dimensions.HEIGHT;
+                        Runner.updateCanvasScaling(this.canvas);
+                        this.distanceMeter.calcXPos(this.dimensions.WIDTH);
+                        this.clearCanvas();
+                        this.horizon.update(0, 0, true);
+                        this.tRex.update(0);
+                        // Outer container and distance meter.
+                        if (this.activated || this.crashed) {
+                            this.containerEl.style.width = this.dimensions.WIDTH + 'px';
+                            this.containerEl.style.height = this.dimensions.HEIGHT + 'px';
+                            this.distanceMeter.update(0, Math.ceil(this.distanceRan));
+                            this.stop();
+                        } else {
+                            this.tRex.draw(0, 0);
+                        }
+                        // Game over panel.
+                        if (this.crashed && this.gameOverPanel) {
+                            this.gameOverPanel.updateDimensions(this.dimensions.WIDTH);
+                            this.gameOverPanel.draw();
+                        }
+                    }
+                },
+                /**
+                * Play the game intro.
+                * Canvas container width expands out to the full width.
+                */
+                playIntro: function () {
+                    if (!this.started && !this.crashed) {
+                        this.playingIntro = true;
+                        this.tRex.playingIntro = true;
+                        // CSS animation definition.
+                        var keyframes = '@-webkit-keyframes intro { ' +
+                            'from { width:' + Trex.config.WIDTH + 'px }' +
+                            'to { width: ' + this.dimensions.WIDTH + 'px }' +
+                            '}';
+                        document.styleSheets[0].insertRule(keyframes, 0);
+                        this.containerEl.addEventListener(Runner.events.ANIM_END,
+                            this.startGame.bind(this));
+                        this.containerEl.style.webkitAnimation = 'intro .4s ease-out 1 both';
+                        this.containerEl.style.width = this.dimensions.WIDTH + 'px';
+                        if (this.touchController) {
+                            this.outerContainerEl.appendChild(this.touchController);
+                        }
+                        this.activated = true;
+                        this.started = true;
+                    } else if (this.crashed) {
+                        this.restart();
+                    }
+                },
+                /**
+                * Update the game status to started.
+                */    
+                startGame: function () {
+                    this.runningTime = 0;
+                    this.playingIntro = false;
+                    this.tRex.playingIntro = false;
+                    this.containerEl.style.webkitAnimation = '';
+                    this.playCount++;
+                    // Handle tabbing off the page. Pause the current game.
+                    window.addEventListener(Runner.events.VISIBILITY,
+                        this.onVisibilityChange.bind(this));
+                    window.addEventListener(Runner.events.BLUR,
+                        this.onVisibilityChange.bind(this));
+                    window.addEventListener(Runner.events.FOCUS,
+                        this.onVisibilityChange.bind(this));
+                },
+                clearCanvas: function () {
+                    this.canvasCtx.clearRect(0, 0, this.dimensions.WIDTH,
+                        this.dimensions.HEIGHT);
+                },
+                /**
+                * Update the game frame.
+                */
+                update: function () {
+                    this.drawPending = false;
+                    var now = getTimeStamp();
+                    var deltaTime = now - (this.time || now);
+                    this.time = now;
+                    if (this.activated) {
+                        this.clearCanvas();
+                        if (this.tRex.jumping) {
+                            this.tRex.updateJump(deltaTime, this.config);
+                        }
+                        this.runningTime += deltaTime;
+                        var hasObstacles = this.runningTime > this.config.CLEAR_TIME;
+                        // First jump triggers the intro.
+                        if (this.tRex.jumpCount == 1 && !this.playingIntro) {
+                            this.playIntro();
+                        }
+                        // The horizon doesn't move until the intro is over.
+                        if (this.playingIntro) {
+                            this.horizon.update(0, this.currentSpeed, hasObstacles);
+                        } else {
+                            deltaTime = !this.started ? 0 : deltaTime;
+                            this.horizon.update(deltaTime, this.currentSpeed, hasObstacles);
+                        }
+                        // Check for collisions.
+                        var collision = hasObstacles &&
+                            checkForCollision(this.horizon.obstacles[0], this.tRex);
+                        if (!collision) {
+                            this.distanceRan += this.currentSpeed * deltaTime / this.msPerFrame;
+                            if (this.currentSpeed < this.config.MAX_SPEED) {
+                                this.currentSpeed += this.config.ACCELERATION;
+                            }
+                        } else {
+                            this.gameOver();
+                        }
+                        if (this.distanceMeter.getActualDistance(this.distanceRan) >
+                            this.distanceMeter.maxScore) {
+                            this.distanceRan = 0;
+                        }
+                        var playAcheivementSound = this.distanceMeter.update(deltaTime,
+                            Math.ceil(this.distanceRan));
+                        if (playAcheivementSound) {
+                            this.playSound(this.soundFx.SCORE);
+                        }
+                    }
+                    if (!this.crashed) {
+                        this.tRex.update(deltaTime);
+                        this.raq();
+                    }
+                },
+                /**
+                * Event handler.
+                */
+                handleEvent: function (e) {
+                    return (function (evtType, events) {
+                        switch (evtType) {
+                            case events.KEYDOWN:
+                            case events.TOUCHSTART:
+                            case events.MOUSEDOWN:
+                                this.onKeyDown(e);
+                                break;
+                            case events.KEYUP:
+                            case events.TOUCHEND:
+                            case events.MOUSEUP:
+                                this.onKeyUp(e);
+                                break;
+                        }
+                    }.bind(this))(e.type, Runner.events);
+                },
+                /**
+                * Bind relevant key / mouse / touch listeners.
+                */
+                startListening: function () {
+                    // Keys.
+                    document.addEventListener(Runner.events.KEYDOWN, this);
+                    document.addEventListener(Runner.events.KEYUP, this);
+                    if (IS_MOBILE) {
+                        // Mobile only touch devices.
+                        this.touchController.addEventListener(Runner.events.TOUCHSTART, this);
+                        this.touchController.addEventListener(Runner.events.TOUCHEND, this);
+                        this.containerEl.addEventListener(Runner.events.TOUCHSTART, this);
+                    } else {
+                        // Mouse.
+                        document.addEventListener(Runner.events.MOUSEDOWN, this);
+                        document.addEventListener(Runner.events.MOUSEUP, this);
+                    }
+                },
+                /**
+                * Remove all listeners.
+                */
+                stopListening: function () {
+                    document.removeEventListener(Runner.events.KEYDOWN, this);
+                    document.removeEventListener(Runner.events.KEYUP, this);
+                    if (IS_MOBILE) {
+                        this.touchController.removeEventListener(Runner.events.TOUCHSTART, this);
+                        this.touchController.removeEventListener(Runner.events.TOUCHEND, this);
+                        this.containerEl.removeEventListener(Runner.events.TOUCHSTART, this);
+                    } else {
+                        document.removeEventListener(Runner.events.MOUSEDOWN, this);
+                        document.removeEventListener(Runner.events.MOUSEUP, this);
+                    }
+                },
+                /**
+                * Process keydown.
+                * @param {Event} e
+                */
+                onKeyDown: function (e) {
+                    if (e.target != this.detailsButton) {
+                        if (!this.crashed && (Runner.keycodes.JUMP[String(e.keyCode)] ||
+                            e.type == Runner.events.TOUCHSTART)) {
+                            if (!this.activated) {
+                                this.loadSounds();
+                                this.activated = true;
+                            }
+                            if (!this.tRex.jumping) {
+                                this.playSound(this.soundFx.BUTTON_PRESS);
+                                this.tRex.startJump();
+
+                            }
+                        }
+                        if (this.crashed && e.type == Runner.events.TOUCHSTART &&
+                            e.currentTarget == this.containerEl) {
+                            this.restart();
+                        }
+                    }
+                    // Speed drop, activated only when jump key is not pressed.
+                    if (Runner.keycodes.DUCK[e.keyCode] && this.tRex.jumping) {
+                        e.preventDefault();
+                        this.tRex.setSpeedDrop();
+                    }
+                },
+                /**
+                * Process key up.
+                * @param {Event} e
+                */
+                onKeyUp: function (e) {
+                    var keyCode = String(e.keyCode);
+                    var isjumpKey = Runner.keycodes.JUMP[keyCode] ||
+                        e.type == Runner.events.TOUCHEND ||
+                        e.type == Runner.events.MOUSEDOWN;
+                    if (this.isRunning() && isjumpKey) {
+                        this.tRex.endJump();
+                    } else if (Runner.keycodes.DUCK[keyCode]) {
+                        this.tRex.speedDrop = false;
+                    } else if (this.crashed) {
+                        // Check that enough time has elapsed before allowing jump key to restart.
+                        var deltaTime = getTimeStamp() - this.time;
+                        if (Runner.keycodes.RESTART[keyCode] ||
+                            (e.type == Runner.events.MOUSEUP && e.target == this.canvas) ||
+                            (deltaTime >= this.config.GAMEOVER_CLEAR_TIME &&
+                                Runner.keycodes.JUMP[keyCode])) {
+                            this.restart();
+                        }
+                    } else if (this.paused && isjumpKey) {
+                        this.play();
+                    }
+                },
+                /**
+                * RequestAnimationFrame wrapper.
+                */
+                raq: function () {
+                    if (!this.drawPending) {
+                        this.drawPending = true;
+                        this.raqId = requestAnimationFrame(this.update.bind(this));
+                    }
+                },
+                /**
+                * Whether the game is running.
+                * @return {boolean}
+                */
+                isRunning: function () {
+                    return !!this.raqId;
+                },
+                /**
+                * Game over state.
+                */
+                gameOver: function () {
+                    this.playSound(this.soundFx.HIT);
+                    vibrate(200);
+                    this.stop();
+                    this.crashed = true;
+                    this.distanceMeter.acheivement = false;
+                    this.tRex.update(100, Trex.status.CRASHED);
+                    // Game over panel.
+                    if (!this.gameOverPanel) {
+                        this.gameOverPanel = new GameOverPanel(this.canvas,
+                            this.images.TEXT_SPRITE, this.images.RESTART,
+                            this.dimensions);
+                    } else {
+                        this.gameOverPanel.draw();
+                    }
+                    // Update the high score.
+                    if (this.distanceRan > this.highestScore) {
+                        this.highestScore = Math.ceil(this.distanceRan);
+                        this.distanceMeter.setHighScore(this.highestScore);
+                    }
+                    // Reset the time clock.
+                    this.time = getTimeStamp();
+                },
+                stop: function () {
+                    this.activated = false;
+                    this.paused = true;
+                    cancelAnimationFrame(this.raqId);
+                    this.raqId = 0;
+                },
+                play: function () {
+                    if (!this.crashed) {
+                        this.activated = true;
+                        this.paused = false;
+                        this.tRex.update(0, Trex.status.RUNNING);
+                        this.time = getTimeStamp();
+                        this.update();
+                    }
+                },
+                restart: function () {
+                    if (!this.raqId) {
+                        this.playCount++;
+                        this.runningTime = 0;
+                        this.activated = true;
+                        this.crashed = false;
+                        this.distanceRan = 0;
+                        this.setSpeed(this.config.SPEED);
+                        this.time = getTimeStamp();
+                        this.containerEl.classList.remove(Runner.classes.CRASHED);
+                        this.clearCanvas();
+                        this.distanceMeter.reset(this.highestScore);
+                        this.horizon.reset();
+                        this.tRex.reset();
+                        this.playSound(this.soundFx.BUTTON_PRESS);
+                        this.update();
+                    }
+                },
+                /**
+                * Pause the game if the tab is not in focus.
+                */
+                onVisibilityChange: function (e) {
+                    if (document.hidden || document.webkitHidden || e.type == 'blur') {
+                        this.stop();
+                    } else {
+                        this.play();
+                    }
+                },
+                /**
+                * Play a sound.
+                * @param {SoundBuffer} soundBuffer
+                */
+                playSound: function (soundBuffer) {
+                    if (soundBuffer) {
+                        var sourceNode = this.audioContext.createBufferSource();
+                        sourceNode.buffer = soundBuffer;
+                        sourceNode.connect(this.audioContext.destination);
+                        sourceNode.start(0);
+                    }
+                }
+            };
+            /**
+            * Updates the canvas size taking into
+            * account the backing store pixel ratio and
+            * the device pixel ratio.
+            *
+            * See article by Paul Lewis:
+            * https://www.html5rocks.com/en/tutorials/canvas/hidpi/
+            *
+            * @param {HTMLCanvasElement} canvas
+            * @param {number} opt_width
+            * @param {number} opt_height
+            * @return {boolean} Whether the canvas was scaled.
+            */
+            Runner.updateCanvasScaling = function (canvas, opt_width, opt_height) {
+                var context = canvas.getContext('2d');
+                // Query the various pixel ratios
+                var devicePixelRatio = Math.floor(window.devicePixelRatio) || 1;
+                var backingStoreRatio = Math.floor(context.webkitBackingStorePixelRatio) || 1;
+                var ratio = devicePixelRatio / backingStoreRatio;
+                // Upscale the canvas if the two ratios don't match
+                if (devicePixelRatio !== backingStoreRatio) {
+                    var oldWidth = opt_width || canvas.width;
+                    var oldHeight = opt_height || canvas.height;
+                    canvas.width = oldWidth * ratio;
+                    canvas.height = oldHeight * ratio;
+                    canvas.style.width = oldWidth + 'px';
+                    canvas.style.height = oldHeight + 'px';
+                    // Scale the context to counter the fact that we've manually scaled
+                    // our canvas element.
+                    context.scale(ratio, ratio);
+                    return true;
+                }
+                return false;
+            };
+            /**
+            * Get random number.
+            * @param {number} min
+            * @param {number} max
+            * @param {number}
+            */
+            function getRandomNum(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+            /**
+            * Vibrate on mobile devices.
+            * @param {number} duration Duration of the vibration in milliseconds.
+            */
+            function vibrate(duration) {
+                if (IS_MOBILE && window.navigator.vibrate) {
+                    window.navigator.vibrate(duration);
+                }
+            }
+            /**
+            * Create canvas element.
+            * @param {HTMLElement} container Element to append canvas to.
+            * @param {number} width
+            * @param {number} height
+            * @param {string} opt_classname
+            * @return {HTMLCanvasElement}
+            */
+            function createCanvas(container, width, height, opt_classname) {
+                var canvas = document.createElement('canvas');
+                canvas.className = opt_classname ? Runner.classes.CANVAS + ' ' +
+                    opt_classname : Runner.classes.CANVAS;
+                canvas.width = width;
+                canvas.height = height;
+                container.appendChild(canvas);
+                return canvas;
+            }
+            /**
+            * Decodes the base 64 audio to ArrayBuffer used by Web Audio.
+            * @param {string} base64String
+            */
+            function decodeBase64ToArrayBuffer(base64String) {
+                var len = (base64String.length / 4) * 3;
+                var str = atob(base64String);
+                var arrayBuffer = new ArrayBuffer(len);
+                var bytes = new Uint8Array(arrayBuffer);
+                for (var i = 0; i < len; i++) {
+                    bytes[i] = str.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+            /**
+            * Return the current timestamp.
+            * @return {number}
+            */
+            function getTimeStamp() {
+                return IS_IOS ? new Date().getTime() : performance.now();
+            }
+            //******************************************************************************
+            /**
+            * Game over panel.
+            * @param {!HTMLCanvasElement} canvas
+            * @param {!HTMLImage} textSprite
+            * @param {!HTMLImage} restartImg
+            * @param {!Object} dimensions Canvas dimensions.
+            * @constructor
+            */
+            function GameOverPanel(canvas, textSprite, restartImg, dimensions) {
+                this.canvas = canvas;
+                this.canvasCtx = canvas.getContext('2d');
+                this.canvasDimensions = dimensions;
+                this.textSprite = textSprite;
+                this.restartImg = restartImg;
+                this.draw();
+            };
+            /**
+            * Dimensions used in the panel.
+            * @enum {number}
+            */
+            GameOverPanel.dimensions = {
+                TEXT_X: 0,
+                TEXT_Y: 13,
+                TEXT_WIDTH: 191,
+                TEXT_HEIGHT: 11,
+                RESTART_WIDTH: 36,
+                RESTART_HEIGHT: 32
+            };
+            GameOverPanel.prototype = {
+                /**
+                * Update the panel dimensions.
+                * @param {number} width New canvas width.
+                * @param {number} opt_height Optional new canvas height.
+                */
+                updateDimensions: function (width, opt_height) {
+                    this.canvasDimensions.WIDTH = width;
+                    if (opt_height) {
+                        this.canvasDimensions.HEIGHT = opt_height;
+                    }
+                },
+                /**
+                * Draw the panel.
+                */
+                draw: function () {
+                    var dimensions = GameOverPanel.dimensions;
+                    var centerX = this.canvasDimensions.WIDTH / 2;
+                    // Game over text.
+                    var textSourceX = dimensions.TEXT_X;
+                    var textSourceY = dimensions.TEXT_Y;
+                    var textSourceWidth = dimensions.TEXT_WIDTH;
+                    var textSourceHeight = dimensions.TEXT_HEIGHT;
+                    var textTargetX = Math.round(centerX - (dimensions.TEXT_WIDTH / 2));
+                    var textTargetY = Math.round((this.canvasDimensions.HEIGHT - 25) / 3);
+                    var textTargetWidth = dimensions.TEXT_WIDTH;
+                    var textTargetHeight = dimensions.TEXT_HEIGHT;
+                    var restartSourceWidth = dimensions.RESTART_WIDTH;
+                    var restartSourceHeight = dimensions.RESTART_HEIGHT;
+                    var restartTargetX = centerX - (dimensions.RESTART_WIDTH / 2);
+                    var restartTargetY = this.canvasDimensions.HEIGHT / 2;
+                    if (IS_HIDPI) {
+                        textSourceY *= 2;
+                        textSourceX *= 2;
+                        textSourceWidth *= 2;
+                        textSourceHeight *= 2;
+                        restartSourceWidth *= 2;
+                        restartSourceHeight *= 2;
+                    }
+                    // Game over text from sprite.
+                    this.canvasCtx.drawImage(this.textSprite,
+                        textSourceX, textSourceY, textSourceWidth, textSourceHeight,
+                        textTargetX, textTargetY, textTargetWidth, textTargetHeight);
+                    // Restart button.
+                    this.canvasCtx.drawImage(this.restartImg, 0, 0,
+                        restartSourceWidth, restartSourceHeight,
+                        restartTargetX, restartTargetY, dimensions.RESTART_WIDTH,
+                        dimensions.RESTART_HEIGHT);
+                }
+            };
+            //******************************************************************************
+            /**
+            * Check for a collision.
+            * @param {!Obstacle} obstacle
+            * @param {!Trex} tRex T-rex object.
+            * @param {HTMLCanvasContext} opt_canvasCtx Optional canvas context for drawing
+            * collision boxes.
+            * @return {Array.<CollisionBox>}
+            */
+            function checkForCollision(obstacle, tRex, opt_canvasCtx) {
+                var obstacleBoxXPos = Runner.defaultDimensions.WIDTH + obstacle.xPos;
+                // Adjustments are made to the bounding box as there is a 1 pixel white
+                // border around the t-rex and obstacles.
+                var tRexBox = new CollisionBox(
+                    tRex.xPos + 1,
+                    tRex.yPos + 1,
+                    tRex.config.WIDTH - 2,
+                    tRex.config.HEIGHT - 2);
+                var obstacleBox = new CollisionBox(
+                    obstacle.xPos + 1,
+                    obstacle.yPos + 1,
+                    obstacle.typeConfig.width * obstacle.size - 2,
+                    obstacle.typeConfig.height - 2);
+                // Debug outer box
+                if (opt_canvasCtx) {
+                    drawCollisionBoxes(opt_canvasCtx, tRexBox, obstacleBox);
+                }
+                // Simple outer bounds check.
+                if (boxCompare(tRexBox, obstacleBox)) {
+                    var collisionBoxes = obstacle.collisionBoxes;
+                    var tRexCollisionBoxes = Trex.collisionBoxes;
+                    // Detailed axis aligned box check.
+                    for (var t = 0; t < tRexCollisionBoxes.length; t++) {
+                        for (var i = 0; i < collisionBoxes.length; i++) {
+                            // Adjust the box to actual positions.
+                            var adjTrexBox =
+                                createAdjustedCollisionBox(tRexCollisionBoxes[t], tRexBox);
+                            var adjObstacleBox =
+                                createAdjustedCollisionBox(collisionBoxes[i], obstacleBox);
+                            var crashed = boxCompare(adjTrexBox, adjObstacleBox);
+                            // Draw boxes for debug.
+                            if (opt_canvasCtx) {
+                                drawCollisionBoxes(opt_canvasCtx, adjTrexBox, adjObstacleBox);
+                            }
+                            if (crashed) {
+                                return [adjTrexBox, adjObstacleBox];
+                            }
+                        }
+                    }
+                }
+                return false;
+            };
+            /**
+            * Adjust the collision box.
+            * @param {!CollisionBox} box The original box.
+            * @param {!CollisionBox} adjustment Adjustment box.
+            * @return {CollisionBox} The adjusted collision box object.
+            */
+            function createAdjustedCollisionBox(box, adjustment) {
+                return new CollisionBox(
+                    box.x + adjustment.x,
+                    box.y + adjustment.y,
+                    box.width,
+                    box.height);
+            };
+            /**
+            * Draw the collision boxes for debug.
+            */
+            function drawCollisionBoxes(canvasCtx, tRexBox, obstacleBox) {
+                canvasCtx.save();
+                canvasCtx.strokeStyle = '#f00';
+                canvasCtx.strokeRect(tRexBox.x, tRexBox.y,
+                    tRexBox.width, tRexBox.height);
+                canvasCtx.strokeStyle = '#0f0';
+                canvasCtx.strokeRect(obstacleBox.x, obstacleBox.y,
+                    obstacleBox.width, obstacleBox.height);
+                canvasCtx.restore();
+            };
+            /**
+            * Compare two collision boxes for a collision.
+            * @param {CollisionBox} tRexBox
+            * @param {CollisionBox} obstacleBox
+            * @return {boolean} Whether the boxes intersected.
+            */
+            function boxCompare(tRexBox, obstacleBox) {
+                var crashed = false;
+                var tRexBoxX = tRexBox.x;
+                var tRexBoxY = tRexBox.y;
+                var obstacleBoxX = obstacleBox.x;
+                var obstacleBoxY = obstacleBox.y;
+                // Axis-Aligned Bounding Box method.
+                if (tRexBox.x < obstacleBoxX + obstacleBox.width &&
+                    tRexBox.x + tRexBox.width > obstacleBoxX &&
+                    tRexBox.y < obstacleBox.y + obstacleBox.height &&
+                    tRexBox.height + tRexBox.y > obstacleBox.y) {
+                    crashed = true;
+                }
+                return crashed;
+            };
+            //******************************************************************************
+            /**
+            * Collision box object.
+            * @param {number} x X position.
+            * @param {number} y Y Position.
+            * @param {number} w Width.
+            * @param {number} h Height.
+            */
+            function CollisionBox(x, y, w, h) {
+                this.x = x;
+                this.y = y;
+                this.width = w;
+                this.height = h;
+            };
+            //******************************************************************************
+            /**
+            * Obstacle.
+            * @param {HTMLCanvasCtx} canvasCtx
+            * @param {Obstacle.type} type
+            * @param {image} obstacleImg Image sprite.
+            * @param {Object} dimensions
+            * @param {number} gapCoefficient Mutipler in determining the gap.
+            * @param {number} speed
+            */
+            function Obstacle(canvasCtx, type, obstacleImg, dimensions,
+                gapCoefficient, speed) {
+                this.canvasCtx = canvasCtx;
+                this.image = obstacleImg;
+                this.typeConfig = type;
+                this.gapCoefficient = gapCoefficient;
+                this.size = getRandomNum(1, Obstacle.MAX_OBSTACLE_LENGTH);
+                this.dimensions = dimensions;
+                this.remove = false;
+                this.xPos = 0;
+                this.yPos = this.typeConfig.yPos;
+                this.width = 0;
+                this.collisionBoxes = [];
+                this.gap = 0;
+                this.init(speed);
+            };
+            /**
+            * Coefficient for calculating the maximum gap.
+            * @const
+            */
+            Obstacle.MAX_GAP_COEFFICIENT = 1.5;
+            /**
+            * Maximum obstacle grouping count.
+            * @const
+            */
+            Obstacle.MAX_OBSTACLE_LENGTH = 3,
+                Obstacle.prototype = {
+                    /**
+                    * Initialise the DOM for the obstacle.
+                    * @param {number} speed
+                    */
+                    init: function (speed) {
+                        this.cloneCollisionBoxes();
+                        // Only allow sizing if we're at the right speed.
+                        if (this.size > 1 && this.typeConfig.multipleSpeed > speed) {
+                            this.size = 1;
+                        }
+                        this.width = this.typeConfig.width * this.size;
+                        this.xPos = this.dimensions.WIDTH - this.width;
+                        this.draw();
+                        // Make collision box adjustments,
+                        // Central box is adjusted to the size as one box.
+                        // ____ ______ ________
+                        // _| |-| _| |-| _| |-|
+                        // | |<->| | | |<--->| | | |<----->| |
+                        // | | 1 | | | | 2 | | | | 3 | |
+                        // |_|___|_| |_|_____|_| |_|_______|_|
+                        //
+                        if (this.size > 1) {
+                            this.collisionBoxes[1].width = this.width - this.collisionBoxes[0].width -
+                                this.collisionBoxes[2].width;
+                            this.collisionBoxes[2].x = this.width - this.collisionBoxes[2].width;
+                        }
+                        this.gap = this.getGap(this.gapCoefficient, speed);
+                    },
+                    /**
+                    * Draw and crop based on size.
+                    */
+                    draw: function () {
+                        var sourceWidth = this.typeConfig.width;
+                        var sourceHeight = this.typeConfig.height;
+                        if (IS_HIDPI) {
+                            sourceWidth = sourceWidth * 2;
+                            sourceHeight = sourceHeight * 2;
+                        }
+                        // Sprite
+                        var sourceX = (sourceWidth * this.size) * (0.5 * (this.size - 1));
+                        this.canvasCtx.drawImage(this.image,
+                            sourceX, 0,
+                            sourceWidth * this.size, sourceHeight,
+                            this.xPos, this.yPos,
+                            this.typeConfig.width * this.size, this.typeConfig.height);
+                    },
+                    /**
+                    * Obstacle frame update.
+                    * @param {number} deltaTime
+                    * @param {number} speed
+                    */
+                    update: function (deltaTime, speed) {
+                        if (!this.remove) {
+                            this.xPos -= Math.floor((speed * FPS / 1000) * deltaTime);
+                            this.draw();
+                            if (!this.isVisible()) {
+                                this.remove = true;
+                            }
+                        }
+                    },
+                    /**
+                    * Calculate a random gap size.
+                    * - Minimum gap gets wider as speed increses
+                    * @param {number} gapCoefficient
+                    * @param {number} speed
+                    * @return {number} The gap size.
+                    */
+                    getGap: function (gapCoefficient, speed) {
+                        var minGap = Math.round(this.width * speed +
+                            this.typeConfig.minGap * gapCoefficient);
+                        var maxGap = Math.round(minGap * Obstacle.MAX_GAP_COEFFICIENT);
+                        return getRandomNum(minGap, maxGap);
+                    },
+                    /**
+                    * Check if obstacle is visible.
+                    * @return {boolean} Whether the obstacle is in the game area.
+                    */
+                    isVisible: function () {
+                        return this.xPos + this.width > 0;
+                    },
+                    /**
+                    * Make a copy of the collision boxes, since these will change based on
+                    * obstacle type and size.
+                    */
+                    cloneCollisionBoxes: function () {
+                        var collisionBoxes = this.typeConfig.collisionBoxes;
+                        for (var i = collisionBoxes.length - 1; i >= 0; i--) {
+                            this.collisionBoxes[i] = new CollisionBox(collisionBoxes[i].x,
+                                collisionBoxes[i].y, collisionBoxes[i].width,
+                                collisionBoxes[i].height);
+                        }
+                    }
+                };
+            /**
+            * Obstacle definitions.
+            * minGap: minimum pixel space betweeen obstacles.
+            * multipleSpeed: Speed at which multiples are allowed.
+            */
+            Obstacle.types = [
+                {
+                    type: 'CACTUS_SMALL',
+                    className: ' cactus cactus-small ',
+                    width: 17,
+                    height: 35,
+                    yPos: 105,
+                    multipleSpeed: 3,
+                    minGap: 120,
+                    collisionBoxes: [
+                        new CollisionBox(0, 7, 5, 27),
+                        new CollisionBox(4, 0, 6, 34),
+                        new CollisionBox(10, 4, 7, 14)
+                    ]
+                },
+                {
+                    type: 'CACTUS_LARGE',
+                    className: ' cactus cactus-large ',
+                    width: 25,
+                    height: 50,
+                    yPos: 90,
+                    multipleSpeed: 6,
+                    minGap: 120,
+                    collisionBoxes: [
+                        new CollisionBox(0, 12, 7, 38),
+                        new CollisionBox(8, 0, 7, 49),
+                        new CollisionBox(13, 10, 10, 38)
+                    ]
+                }
+            ];
+            //******************************************************************************
+            /**
+            * T-rex game character.
+            * @param {HTMLCanvas} canvas
+            * @param {HTMLImage} image Character image.
+            * @constructor
+            */
+            function Trex(canvas, image) {
+                this.canvas = canvas;
+                this.canvasCtx = canvas.getContext('2d');
+                this.image = image;
+                this.xPos = 0;
+                this.yPos = 0;
+                // Position when on the ground.
+                this.groundYPos = 0;
+                this.currentFrame = 0;
+                this.currentAnimFrames = [];
+                this.blinkDelay = 0;
+                this.animStartTime = 0;
+                this.timer = 0;
+                this.msPerFrame = 1000 / FPS;
+                this.config = Trex.config;
+                // Current status.
+                this.status = Trex.status.WAITING;
+                this.jumping = false;
+                this.jumpVelocity = 0;
+                this.reachedMinHeight = false;
+                this.speedDrop = false;
+                this.jumpCount = 0;
+                this.jumpspotX = 0;
+                this.init();
+            };
+            /**
+            * T-rex player config.
+            * @enum {number}
+            */
+            Trex.config = {
+                DROP_VELOCITY: -5,
+                GRAVITY: 0.6,
+                HEIGHT: 47,
+                INIITAL_JUMP_VELOCITY: -10,
+                INTRO_DURATION: 1500,
+                MAX_JUMP_HEIGHT: 30,
+                MIN_JUMP_HEIGHT: 30,
+                SPEED_DROP_COEFFICIENT: 3,
+                SPRITE_WIDTH: 262,
+                START_X_POS: 50,
+                WIDTH: 44
+            };
+            /**
+            * Used in collision detection.
+            * @type {Array.<CollisionBox>}
+            */
+            Trex.collisionBoxes = [
+                new CollisionBox(1, -1, 30, 26),
+                new CollisionBox(32, 0, 8, 16),
+                new CollisionBox(10, 35, 14, 8),
+                new CollisionBox(1, 24, 29, 5),
+                new CollisionBox(5, 30, 21, 4),
+                new CollisionBox(9, 34, 15, 4)
+            ];
+            /**
+            * Animation states.
+            * @enum {string}
+            */
+            Trex.status = {
+                CRASHED: 'CRASHED',
+                JUMPING: 'JUMPING',
+                RUNNING: 'RUNNING',
+                WAITING: 'WAITING'
+            };
+            /**
+            * Blinking coefficient.
+            * @const
+            */
+            Trex.BLINK_TIMING = 7000;
+            /**
+            * Animation config for different states.
+            * @enum {object}
+            */
+            Trex.animFrames = {
+                WAITING: {
+                    frames: [44, 0],
+                    msPerFrame: 1000 / 3
+                },
+                RUNNING: {
+                    frames: [88, 132],
+                    msPerFrame: 1000 / 12
+                },
+                CRASHED: {
+                    frames: [220],
+                    msPerFrame: 1000 / 60
+                },
+                JUMPING: {
+                    frames: [0],
+                    msPerFrame: 1000 / 60
+                }
+            };
+            Trex.prototype = {
+                /**
+                * T-rex player initaliser.
+                * Sets the t-rex to blink at random intervals.
+                */
+                init: function () {
+                    this.blinkDelay = this.setBlinkDelay();
+                    this.groundYPos = Runner.defaultDimensions.HEIGHT - this.config.HEIGHT -
+                        Runner.config.BOTTOM_PAD;
+                    this.yPos = this.groundYPos;
+                    this.minJumpHeight = this.groundYPos - this.config.MIN_JUMP_HEIGHT;
+                    this.draw(0, 0);
+                    this.update(0, Trex.status.WAITING);
+                },
+                /**
+                * Setter for the jump velocity.
+                * The approriate drop velocity is also set.
+                */
+                setJumpVelocity: function (setting) {
+                    this.config.INIITAL_JUMP_VELOCITY = -setting;
+                    this.config.DROP_VELOCITY = -setting / 2;
+                },
+                /**
+                * Set the animation status.
+                * @param {!number} deltaTime
+                * @param {Trex.status} status Optional status to switch to.
+                */
+                update: function (deltaTime, opt_status) {
+                    this.timer += deltaTime;
+                    // Update the status.
+                    if (opt_status) {
+                        this.status = opt_status;
+                        this.currentFrame = 0;
+                        this.msPerFrame = Trex.animFrames[opt_status].msPerFrame;
+                        this.currentAnimFrames = Trex.animFrames[opt_status].frames;
+                        if (opt_status == Trex.status.WAITING) {
+                            this.animStartTime = getTimeStamp();
+                            this.setBlinkDelay();
+                        }
+                    }
+                    // Game intro animation, T-rex moves in from the left.
+                    if (this.playingIntro && this.xPos < this.config.START_X_POS) {
+                        this.xPos += Math.round((this.config.START_X_POS /
+                            this.config.INTRO_DURATION) * deltaTime);
+                    }
+                    if (this.status == Trex.status.WAITING) {
+                        this.blink(getTimeStamp());
+                    } else {
+                        this.draw(this.currentAnimFrames[this.currentFrame], 0);
+                    }
+                    // Update the frame position.
+                    if (this.timer >= this.msPerFrame) {
+                        this.currentFrame = this.currentFrame ==
+                            this.currentAnimFrames.length - 1 ? 0 : this.currentFrame + 1;
+                        this.timer = 0;
+                    }
+                },
+                /**
+                * Draw the t-rex to a particular position.
+                * @param {number} x
+                * @param {number} y
+                */
+                draw: function (x, y) {
+                    var sourceX = x;
+                    var sourceY = y;
+                    var sourceWidth = this.config.WIDTH;
+                    var sourceHeight = this.config.HEIGHT;
+                    if (IS_HIDPI) {
+                        sourceX *= 2;
+                        sourceY *= 2;
+                        sourceWidth *= 2;
+                        sourceHeight *= 2;
+                    }
+                    this.canvasCtx.drawImage(this.image, sourceX, sourceY,
+                        sourceWidth, sourceHeight,
+                        this.xPos, this.yPos,
+                        this.config.WIDTH, this.config.HEIGHT);
+                },
+                /**
+                * Sets a random time for the blink to happen.
+                */
+                setBlinkDelay: function () {
+                    this.blinkDelay = Math.ceil(Math.random() * Trex.BLINK_TIMING);
+                },
+                /**
+                * Make t-rex blink at random intervals.
+                * @param {number} time Current time in milliseconds.
+                */
+                blink: function (time) {
+                    var deltaTime = time - this.animStartTime;
+                    if (deltaTime >= this.blinkDelay) {
+                        this.draw(this.currentAnimFrames[this.currentFrame], 0);
+                        if (this.currentFrame == 1) {
+                            // Set new random delay to blink.
+                            this.setBlinkDelay();
+                            this.animStartTime = time;
+                        }
+                    }
+                },
+                /**
+                * Initialise a jump.
+                */
+                startJump: function () {
+                    if (!this.jumping) {
+                        this.update(0, Trex.status.JUMPING);
+                        this.jumpVelocity = this.config.INIITAL_JUMP_VELOCITY;
+                        this.jumping = true;
+                        this.reachedMinHeight = false;
+                        this.speedDrop = false;
+                    }
+                },
+                /**
+                * Jump is complete, falling down.
+                */
+                endJump: function () {
+                    if (this.reachedMinHeight &&
+                        this.jumpVelocity < this.config.DROP_VELOCITY) {
+                        this.jumpVelocity = this.config.DROP_VELOCITY;
+                    }
+                },
+                /**
+                * Update frame for a jump.
+                * @param {number} deltaTime
+                */
+                updateJump: function (deltaTime) {
+                    var msPerFrame = Trex.animFrames[this.status].msPerFrame;
+                    var framesElapsed = deltaTime / msPerFrame;
+                    // Speed drop makes Trex fall faster.
+                    if (this.speedDrop) {
+                        this.yPos += Math.round(this.jumpVelocity *
+                            this.config.SPEED_DROP_COEFFICIENT * framesElapsed);
+                    } else {
+                        this.yPos += Math.round(this.jumpVelocity * framesElapsed);
+                    }
+                    this.jumpVelocity += this.config.GRAVITY * framesElapsed;
+                    // Minimum height has been reached.
+                    if (this.yPos < this.minJumpHeight || this.speedDrop) {
+                        this.reachedMinHeight = true;
+                    }
+                    // Reached max height
+                    if (this.yPos < this.config.MAX_JUMP_HEIGHT || this.speedDrop) {
+                        this.endJump();
+                    }
+                    // Back down at ground level. Jump completed.
+                    if (this.yPos > this.groundYPos) {
+                        this.reset();
+                        this.jumpCount++;
+                    }
+                    this.update(deltaTime);
+                },
+                /**
+                * Set the speed drop. Immediately cancels the current jump.
+                */
+                setSpeedDrop: function () {
+                    this.speedDrop = true;
+                    this.jumpVelocity = 1;
+                },
+                /**
+                * Reset the t-rex to running at start of game.
+                */
+                reset: function () {
+                    this.yPos = this.groundYPos;
+                    this.jumpVelocity = 0;
+                    this.jumping = false;
+                    this.update(0, Trex.status.RUNNING);
+                    this.midair = false;
+                    this.speedDrop = false;
+                    this.jumpCount = 0;
+                }
+            };
+            //******************************************************************************
+            /**
+            * Handles displaying the distance meter.
+            * @param {!HTMLCanvasElement} canvas
+            * @param {!HTMLImage} spriteSheet Image sprite.
+            * @param {number} canvasWidth
+            * @constructor
+            */
+            function DistanceMeter(canvas, spriteSheet, canvasWidth) {
+                this.canvas = canvas;
+                this.canvasCtx = canvas.getContext('2d');
+                this.image = spriteSheet;
+                this.x = 0;
+                this.y = 5;
+                this.currentDistance = 0;
+                this.maxScore = 0;
+                this.highScore = 0;
+                this.container = null;
+                this.digits = [];
+                this.acheivement = false;
+                this.defaultString = '';
+                this.flashTimer = 0;
+                this.flashIterations = 0;
+                this.config = DistanceMeter.config;
+                this.init(canvasWidth);
+            };
+            /**
+            * @enum {number}
+            */
+            DistanceMeter.dimensions = {
+                WIDTH: 10,
+                HEIGHT: 13,
+                DEST_WIDTH: 11
+            };
+            /**
+            * Y positioning of the digits in the sprite sheet.
+            * X position is always 0.
+            * @type {array.<number>}
+            */
+            DistanceMeter.yPos = [0, 13, 27, 40, 53, 67, 80, 93, 107, 120];
+            /**
+            * Distance meter config.
+            * @enum {number}
+            */
+            DistanceMeter.config = {
+                // Number of digits.
+                MAX_DISTANCE_UNITS: 5,
+                // Distance that causes achievement animation.
+                ACHIEVEMENT_DISTANCE: 100,
+                // Used for conversion from pixel distance to a scaled unit.
+                COEFFICIENT: 0.025,
+                // Flash duration in milliseconds.
+                FLASH_DURATION: 1000 / 4,
+                // Flash iterations for achievement animation.
+                FLASH_ITERATIONS: 3
+            };
+            DistanceMeter.prototype = {
+                /**
+                * Initialise the distance meter to '00000'.
+                * @param {number} width Canvas width in px.
+                */
+                init: function (width) {
+                    var maxDistanceStr = '';
+                    this.calcXPos(width);
+                    this.maxScore = this.config.MAX_DISTANCE_UNITS;
+                    for (var i = 0; i < this.config.MAX_DISTANCE_UNITS; i++) {
+                        this.draw(i, 0);
+                        this.defaultString += '0';
+                        maxDistanceStr += '9';
+                    }
+                    this.maxScore = parseInt(maxDistanceStr);
+                },
+                /**
+                * Calculate the xPos in the canvas.
+                * @param {number} canvasWidth
+                */
+                calcXPos: function (canvasWidth) {
+                    this.x = canvasWidth - (DistanceMeter.dimensions.DEST_WIDTH *
+                        (this.config.MAX_DISTANCE_UNITS + 1));
+                },
+                /**
+                * Draw a digit to canvas.
+                * @param {number} digitPos Position of the digit.
+                * @param {number} value Digit value 0-9.
+                * @param {boolean} opt_highScore Whether drawing the high score.
+                */
+                draw: function (digitPos, value, opt_highScore) {
+                    var sourceWidth = DistanceMeter.dimensions.WIDTH;
+                    var sourceHeight = DistanceMeter.dimensions.HEIGHT;
+                    var sourceX = DistanceMeter.dimensions.WIDTH * value;
+                    var targetX = digitPos * DistanceMeter.dimensions.DEST_WIDTH;
+                    var targetY = this.y;
+                    var targetWidth = DistanceMeter.dimensions.WIDTH;
+                    var targetHeight = DistanceMeter.dimensions.HEIGHT;
+                    // For high DPI we 2x source values.
+                    if (IS_HIDPI) {
+                        sourceWidth *= 2;
+                        sourceHeight *= 2;
+                        sourceX *= 2;
+                    }
+                    this.canvasCtx.save();
+                    if (opt_highScore) {
+                        // Left of the current score.
+                        var highScoreX = this.x - (this.config.MAX_DISTANCE_UNITS * 2) *
+                            DistanceMeter.dimensions.WIDTH;
+                        this.canvasCtx.translate(highScoreX, this.y);
+                    } else {
+                        this.canvasCtx.translate(this.x, this.y);
+                    }
+                    this.canvasCtx.drawImage(this.image, sourceX, 0,
+                        sourceWidth, sourceHeight,
+                        targetX, targetY,
+                        targetWidth, targetHeight
+                    );
+                    this.canvasCtx.restore();
+                },
+                /**
+                * Covert pixel distance to a 'real' distance.
+                * @param {number} distance Pixel distance ran.
+                * @return {number} The 'real' distance ran.
+                */
+                getActualDistance: function (distance) {
+                    return distance ?
+                        Math.round(distance * this.config.COEFFICIENT) : 0;
+                },
+                /**
+                * Update the distance meter.
+                * @param {number} deltaTime
+                * @param {number} distance
+                * @return {boolean} Whether the acheivement sound fx should be played.
+                */
+                update: function (deltaTime, distance) {
+                    var paint = true;
+                    var playSound = false;
+                    if (!this.acheivement) {
+                        distance = this.getActualDistance(distance);
+                        if (distance > 0) {
+                            // Acheivement unlocked
+                            if (distance % this.config.ACHIEVEMENT_DISTANCE == 0) {
+                                // Flash score and play sound.
+                                this.acheivement = true;
+                                this.flashTimer = 0;
+                                playSound = true;
+                            }
+                            // Create a string representation of the distance with leading 0.
+                            var distanceStr = (this.defaultString +
+                                distance).substr(-this.config.MAX_DISTANCE_UNITS);
+                            this.digits = distanceStr.split('');
+                        } else {
+                            this.digits = this.defaultString.split('');
+                        }
+                    } else {
+                        // Control flashing of the score on reaching acheivement.
+                        if (this.flashIterations <= this.config.FLASH_ITERATIONS) {
+                            this.flashTimer += deltaTime;
+                            if (this.flashTimer < this.config.FLASH_DURATION) {
+                                paint = false;
+                            } else if (this.flashTimer >
+                                this.config.FLASH_DURATION * 2) {
+                                this.flashTimer = 0;
+                                this.flashIterations++;
+                            }
+                        } else {
+                            this.acheivement = false;
+                            this.flashIterations = 0;
+                            this.flashTimer = 0;
+                        }
+                    }
+                    // Draw the digits if not flashing.
+                    if (paint) {
+                        for (var i = this.digits.length - 1; i >= 0; i--) {
+                            this.draw(i, parseInt(this.digits[i]));
+                        }
+                    }
+                    this.drawHighScore();
+                    return playSound;
+                },
+                /**
+                * Draw the high score.
+                */
+                drawHighScore: function () {
+                    this.canvasCtx.save();
+                    this.canvasCtx.globalAlpha = .8;
+                    for (var i = this.highScore.length - 1; i >= 0; i--) {
+                        this.draw(i, parseInt(this.highScore[i], 10), true);
+                    }
+                    this.canvasCtx.restore();
+                },
+                /**
+                * Set the highscore as a array string.
+                * Position of char in the sprite: H - 10, I - 11.
+                * @param {number} distance Distance ran in pixels.
+                */
+                setHighScore: function (distance) {
+                    distance = this.getActualDistance(distance);
+                    var highScoreStr = (this.defaultString +
+                        distance).substr(-this.config.MAX_DISTANCE_UNITS);
+                    this.highScore = ['10', '11', ''].concat(highScoreStr.split(''));
+                },
+                /**
+                * Reset the distance meter back to '00000'.
+                */
+                reset: function () {
+                    this.update(0);
+                    this.acheivement = false;
+                }
+            };
+            //******************************************************************************
+            /**
+            * Cloud background item.
+            * Similar to an obstacle object but without collision boxes.
+            * @param {HTMLCanvasElement} canvas Canvas element.
+            * @param {Image} cloudImg
+            * @param {number} containerWidth
+            */
+            function Cloud(canvas, cloudImg, containerWidth) {
+                this.canvas = canvas;
+                this.canvasCtx = this.canvas.getContext('2d');
+                this.image = cloudImg;
+                this.containerWidth = containerWidth;
+                this.xPos = containerWidth;
+                this.yPos = 0;
+                this.remove = false;
+                this.cloudGap = getRandomNum(Cloud.config.MIN_CLOUD_GAP,
+                    Cloud.config.MAX_CLOUD_GAP);
+                this.init();
+            };
+            /**
+            * Cloud object config.
+            * @enum {number}
+            */
+            Cloud.config = {
+                HEIGHT: 14,
+                MAX_CLOUD_GAP: 400,
+                MAX_SKY_LEVEL: 30,
+                MIN_CLOUD_GAP: 100,
+                MIN_SKY_LEVEL: 71,
+                WIDTH: 46
+            };
+            Cloud.prototype = {
+                /**
+                * Initialise the cloud. Sets the Cloud height.
+                */
+                init: function () {
+                    this.yPos = getRandomNum(Cloud.config.MAX_SKY_LEVEL,
+                        Cloud.config.MIN_SKY_LEVEL);
+                    this.draw();
+                },
+                /**
+                * Draw the cloud.
+                */
+                draw: function () {
+                    this.canvasCtx.save();
+                    var sourceWidth = Cloud.config.WIDTH;
+                    var sourceHeight = Cloud.config.HEIGHT;
+                    if (IS_HIDPI) {
+                        sourceWidth = sourceWidth * 2;
+                        sourceHeight = sourceHeight * 2;
+                    }
+                    this.canvasCtx.drawImage(this.image, 0, 0,
+                        sourceWidth, sourceHeight,
+                        this.xPos, this.yPos,
+                        Cloud.config.WIDTH, Cloud.config.HEIGHT);
+                    this.canvasCtx.restore();
+                },
+                /**
+                * Update the cloud position.
+                * @param {number} speed
+                */
+                update: function (speed) {
+                    if (!this.remove) {
+                        this.xPos -= Math.ceil(speed);
+                        this.draw();
+                        // Mark as removeable if no longer in the canvas.
+                        if (!this.isVisible()) {
+                            this.remove = true;
+                        }
+                    }
+                },
+                /**
+                * Check if the cloud is visible on the stage.
+                * @return {boolean}
+                */
+                isVisible: function () {
+                    return this.xPos + Cloud.config.WIDTH > 0;
+                }
+            };
+            //******************************************************************************
+            /**
+            * Horizon Line.
+            * Consists of two connecting lines. Randomly assigns a flat / bumpy horizon.
+            * @param {HTMLCanvasElement} canvas
+            * @param {HTMLImage} bgImg Horizon line sprite.
+            * @constructor
+            */
+            function HorizonLine(canvas, bgImg) {
+                this.image = bgImg;
+                this.canvas = canvas;
+                this.canvasCtx = canvas.getContext('2d');
+                this.sourceDimensions = {};
+                this.dimensions = HorizonLine.dimensions;
+                this.sourceXPos = [0, this.dimensions.WIDTH];
+                this.xPos = [];
+                this.yPos = 0;
+                this.bumpThreshold = 0.5;
+                this.setSourceDimensions();
+                this.draw();
+            };
+            /**
+            * Horizon line dimensions.
+            * @enum {number}
+            */
+            HorizonLine.dimensions = {
+                WIDTH: 600,
+                HEIGHT: 12,
+                YPOS: 127
+            };
+            HorizonLine.prototype = {
+                /**
+                * Set the source dimensions of the horizon line.
+                */
+                setSourceDimensions: function () {
+                    for (var dimension in HorizonLine.dimensions) {
+                        if (IS_HIDPI) {
+                            if (dimension != 'YPOS') {
+                                this.sourceDimensions[dimension] =
+                                    HorizonLine.dimensions[dimension] * 2;
+                            }
+                        } else {
+                            this.sourceDimensions[dimension] =
+                                HorizonLine.dimensions[dimension];
+                        }
+                        this.dimensions[dimension] = HorizonLine.dimensions[dimension];
+                    }
+                    this.xPos = [0, HorizonLine.dimensions.WIDTH];
+                    this.yPos = HorizonLine.dimensions.YPOS;
+                },
+                /**
+                * Return the crop x position of a type.
+                */
+                getRandomType: function () {
+                    return Math.random() > this.bumpThreshold ? this.dimensions.WIDTH : 0;
+                },
+                /**
+                * Draw the horizon line.
+                */
+                draw: function () {
+                    this.canvasCtx.drawImage(this.image, this.sourceXPos[0], 0,
+                        this.sourceDimensions.WIDTH, this.sourceDimensions.HEIGHT,
+                        this.xPos[0], this.yPos,
+                        this.dimensions.WIDTH, this.dimensions.HEIGHT);
+                    this.canvasCtx.drawImage(this.image, this.sourceXPos[1], 0,
+                        this.sourceDimensions.WIDTH, this.sourceDimensions.HEIGHT,
+                        this.xPos[1], this.yPos,
+                        this.dimensions.WIDTH, this.dimensions.HEIGHT);
+                },
+                /**
+                * Update the x position of an indivdual piece of the line.
+                * @param {number} pos Line position.
+                * @param {number} increment
+                */
+                updateXPos: function (pos, increment) {
+                    var line1 = pos;
+                    var line2 = pos == 0 ? 1 : 0;
+                    this.xPos[line1] -= increment;
+                    this.xPos[line2] = this.xPos[line1] + this.dimensions.WIDTH;
+                    if (this.xPos[line1] <= -this.dimensions.WIDTH) {
+                        this.xPos[line1] += this.dimensions.WIDTH * 2;
+                        this.xPos[line2] = this.xPos[line1] - this.dimensions.WIDTH;
+                        this.sourceXPos[line1] = this.getRandomType();
+                    }
+                },
+                /**
+                * Update the horizon line.
+                * @param {number} deltaTime
+                * @param {number} speed
+                */
+                update: function (deltaTime, speed) {
+                    var increment = Math.floor(speed * (FPS / 1000) * deltaTime);
+                    if (this.xPos[0] <= 0) {
+                        this.updateXPos(0, increment);
+                    } else {
+                        this.updateXPos(1, increment);
+                    }
+                    this.draw();
+                },
+                /**
+                * Reset horizon to the starting position.
+                */
+                reset: function () {
+                    this.xPos[0] = 0;
+                    this.xPos[1] = HorizonLine.dimensions.WIDTH;
+                }
+            };
+            //******************************************************************************
+            /**
+            * Horizon background class.
+            * @param {HTMLCanvasElement} canvas
+            * @param {Array.<HTMLImageElement>} images
+            * @param {object} dimensions Canvas dimensions.
+            * @param {number} gapCoefficient
+            * @constructor
+            */
+            function Horizon(canvas, images, dimensions, gapCoefficient) {
+                this.canvas = canvas;
+                this.canvasCtx = this.canvas.getContext('2d');
+                this.config = Horizon.config;
+                this.dimensions = dimensions;
+                this.gapCoefficient = gapCoefficient;
+                this.obstacles = [];
+                this.horizonOffsets = [0, 0];
+                this.cloudFrequency = this.config.CLOUD_FREQUENCY;
+                // Cloud
+                this.clouds = [];
+                this.cloudImg = images.CLOUD;
+                this.cloudSpeed = this.config.BG_CLOUD_SPEED;
+                // Horizon
+                this.horizonImg = images.HORIZON;
+                this.horizonLine = null;
+                // Obstacles
+                this.obstacleImgs = {
+                    CACTUS_SMALL: images.CACTUS_SMALL,
+                    CACTUS_LARGE: images.CACTUS_LARGE
+                };
+                this.init();
+            };
+            /**
+            * Horizon config.
+            * @enum {number}
+            */
+            Horizon.config = {
+                BG_CLOUD_SPEED: 0.2,
+                BUMPY_THRESHOLD: .3,
+                CLOUD_FREQUENCY: .5,
+                HORIZON_HEIGHT: 16,
+                MAX_CLOUDS: 6
+            };
+            Horizon.prototype = {
+                /**
+                * Initialise the horizon. Just add the line and a cloud. No obstacles.
+                */
+                init: function () {
+                    this.addCloud();
+                    this.horizonLine = new HorizonLine(this.canvas, this.horizonImg);
+                },
+                /**
+                * @param {number} deltaTime
+                * @param {number} currentSpeed
+                * @param {boolean} updateObstacles Used as an override to prevent
+                * the obstacles from being updated / added. This happens in the
+                * ease in section.
+                */
+                update: function (deltaTime, currentSpeed, updateObstacles) {
+                    this.runningTime += deltaTime;
+                    this.horizonLine.update(deltaTime, currentSpeed);
+                    this.updateClouds(deltaTime, currentSpeed);
+                    if (updateObstacles) {
+                        this.updateObstacles(deltaTime, currentSpeed);
+                    }
+                },
+                /**
+                * Update the cloud positions.
+                * @param {number} deltaTime
+                * @param {number} currentSpeed
+                */
+                updateClouds: function (deltaTime, speed) {
+                    var cloudSpeed = this.cloudSpeed / 1000 * deltaTime * speed;
+                    var numClouds = this.clouds.length;
+                    if (numClouds) {
+                        for (var i = numClouds - 1; i >= 0; i--) {
+                            this.clouds[i].update(cloudSpeed);
+                        }
+                        var lastCloud = this.clouds[numClouds - 1];
+                        // Check for adding a new cloud.
+                        if (numClouds < this.config.MAX_CLOUDS &&
+                            (this.dimensions.WIDTH - lastCloud.xPos) > lastCloud.cloudGap &&
+                            this.cloudFrequency > Math.random()) {
+                            this.addCloud();
+                        }
+                        // Remove expired clouds.
+                        this.clouds = this.clouds.filter(function (obj) {
+                            return !obj.remove;
+                        });
+                    }
+                },
+                /**
+                * Update the obstacle positions.
+                * @param {number} deltaTime
+                * @param {number} currentSpeed
+                */
+                updateObstacles: function (deltaTime, currentSpeed) {
+                    // Obstacles, move to Horizon layer.
+                    var updatedObstacles = this.obstacles.slice(0);
+                    for (var i = 0; i < this.obstacles.length; i++) {
+                        var obstacle = this.obstacles[i];
+                        obstacle.update(deltaTime, currentSpeed);
+                        // Clean up existing obstacles.
+                        if (obstacle.remove) {
+                            updatedObstacles.shift();
+                        }
+                    }
+                    this.obstacles = updatedObstacles;
+                    if (this.obstacles.length > 0) {
+                        var lastObstacle = this.obstacles[this.obstacles.length - 1];
+                        if (lastObstacle && !lastObstacle.followingObstacleCreated &&
+                            lastObstacle.isVisible() &&
+                            (lastObstacle.xPos + lastObstacle.width + lastObstacle.gap) <
+                            this.dimensions.WIDTH) {
+                            this.addNewObstacle(currentSpeed);
+                            lastObstacle.followingObstacleCreated = true;
+                        }
+                    } else {
+                        // Create new obstacles.
+                        this.addNewObstacle(currentSpeed);
+                    }
+                },
+                /**
+                * Add a new obstacle.
+                * @param {number} currentSpeed
+                */
+                addNewObstacle: function (currentSpeed) {
+                    var obstacleTypeIndex =
+                        getRandomNum(0, Obstacle.types.length - 1);
+                    var obstacleType = Obstacle.types[obstacleTypeIndex];
+                    var obstacleImg = this.obstacleImgs[obstacleType.type];
+                    this.obstacles.push(new Obstacle(this.canvasCtx, obstacleType,
+                        obstacleImg, this.dimensions, this.gapCoefficient, currentSpeed));
+                },
+                /**
+                * Reset the horizon layer.
+                * Remove existing obstacles and reposition the horizon line.
+                */
+                reset: function () {
+                    this.obstacles = [];
+                    this.horizonLine.reset();
+                },
+                /**
+                * Update the canvas width and scaling.
+                * @param {number} width Canvas width.
+                * @param {number} height Canvas height.
+                */
+                resize: function (width, height) {
+                    this.canvas.width = width;
+                    this.canvas.height = height;
+                },
+                /**
+                * Add a new cloud to the horizon.
+                */
+                addCloud: function () {
+                    this.clouds.push(new Cloud(this.canvas, this.cloudImg,
+                        this.dimensions.WIDTH));
+                }
+            };
+        })();
+
+
+    </script>
+
+
+    <style>
+        /* Copyright 2014 The Chromium Authors. All rights reserved.
+   Use of this source code is governed by a BSD-style license that can be
+   found in the LICENSE file. */
+
+        a {
+            color: #585858;
+        }
+
+        body {
+            background-color: #f7f7f7;
+            color: #585858;
+            font-size: 125%;
+        }
+
+        body.safe-browsing {
+            background-color: rgb(206, 52, 38);
+            color: white;
+        }
+
+        button {
+            background: rgb(76, 142, 250);
+            border: 0;
+            border-radius: 2px;
+            box-sizing: border-box;
+            color: #fff;
+            cursor: pointer;
+            float: right;
+            font-size: .875em;
+            height: 36px;
+            margin: -6px 0 0;
+            padding: 8px 24px;
+            transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [dir='rtl'] button {
+            float: left;
+        }
+
+        button:active {
+            background: rgb(50, 102, 213);
+            outline: 0;
+        }
+
+        button:hover {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .50);
+        }
+
+        .debugging-content {
+            line-height: 1em;
+            margin-bottom: 0;
+            margin-top: 0;
+        }
+
+        .debugging-title {
+            font-weight: bold;
+        }
+
+        #details {
+            color: #696969;
+            margin: 45px 0 50px;
+        }
+
+        #details p:not(:first-of-type) {
+            margin-top: 20px;
+        }
+
+        #error-code {
+            color: black;
+            opacity: .35;
+            text-transform: uppercase;
+        }
+
+        #error-debugging-info {
+            font-size: 0.8em;
+        }
+
+        h1 {
+            -webkit-margin-after: 16px;
+            color: #585858;
+            font-size: 1.6em;
+            font-weight: normal;
+            line-height: 1.25em;
+        }
+
+        h2 {
+            font-size: 1.2em;
+            font-weight: normal;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .icon {
+            background-repeat: no-repeat;
+            background-size: 100%;
+            height: 72px;
+            margin: 0 0 40px;
+            width: 72px;
+        }
+
+        input[type=checkbox] {
+            visibility: hidden;
+        }
+
+        .interstitial-wrapper {
+            box-sizing: border-box;
+            font-size: 1em;
+            line-height: 1.6em;
+            margin: 50px auto 0;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        #malware-opt-in {
+            font-size: .875em;
+            margin-top: 39px;
+        }
+
+        .nav-wrapper {
+            margin-top: 51px;
+        }
+
+        .nav-wrapper::after {
+            clear: both;
+            content: '';
+            display: table;
+            width: 100%;
+        }
+
+        #opt-in-label {
+            -webkit-margin-start: 32px;
+        }
+
+        .safe-browsing :-webkit-any(a, #details, #details-button, h1, h2, p, .small-link) {
+            color: white;
+        }
+
+        .safe-browsing button {
+            background-color: rgb(206, 52, 38);
+            border: 1px solid white;
+        }
+
+        .safe-browsing button:active {
+            background-color: rgb(206, 52, 38);
+            border-color: rgba(255, 255, 255, .6);
+        }
+
+        .safe-browsing button:hover {
+            box-shadow: 0 2px 3px rgba(0, 0, 0, .5);
+        }
+
+        .safe-browsing .icon {
+            background-image: -webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAMAAABiM0N1AAABoVBMVEX///+Li4v////////y8vL09PT99fTbRDfXzMzt7e3v7+/s7Ozy8vLw8PDu7u799PPSQTXx8fHZdGv19fX09PTm5ubbV0zXzczgW1Dd3d3c3Nzjb2Th4eHr6+vl5eXp6enZ2dng4OD29vbz8/PYYFXZV0zaYVbjbWP219TRQTTXdGz43Nn++/rib2T////b29vTQjXaYVf66ObngXjjbmTq6ura2trngHf76Ofk19bX19fe3t7o6Oji4uLk5OTeU0f119TYQzbZQzbWQjbXQzbZRDfaRDfn5+fbV0vj4+PVQjXf39/Y2Njgcmney8rqk4zdysn43drcysjcUETa1tbadGvaV0vaWEzZYVbibmXc2NjfzMvi0M7mfHPYYVbhzszd2dnZx8XieXDkc2nWX1Xacmne2trZdGzbcWjj0c/XTUHX1NPVX1Xg3NzYdGvYXFHZ1dXWTUHgzczUX1Xh3d3XdWzWXFHaVkvXxcTVTEHhbmXTXlXi3t7ayMbVXFLgbmXUTEDXYFXSXlTXzMvk4ODUXFHWbGPWzMvk4eHZioP39/f9Ro5BAAAABnRSTlMAAOQk5ye8yu+CAAACRklEQVR4XrXWRZPbUBSEUWdmIpl5mJmZg8zMzMzMzPCr43isNqif76u6lW+nuzgrtUqB/1ptzUSVamrVDiS1A0ntQFI7kNQOJLUDSe1AUjuQ1A4ktQNJ70DSO5D0DiS9A0nvQIKjlOAoJThqyewsXZ1hQOL8YZNkcJrcJiIlBt2No0zKQSbHJVJiznW5BIg4kMocSDIEBxKcwvkoJAE6uMJAguO13xIaWyyRiDPdGGGQJBFnzb4Qh2Qp0VrmdHXFCSRKxFmYDAsQpNkSiTgtLZAAydIgcZqbYwQSJOqs3QsJkCRxp7s7RSBBok5bW5RAgkSd9bujIoS3AA0QZ0NHrx3ktLro5SvidNRnAUkO2nWZOPU7s4BEB9J74qzrzACSHNRwhDid8xlAogPpEHHa23sIxJyB60XpAHEioT9myBnf4XWq8W4aDw1niROKA/I7270u5HbxKI3Hk0+IEzZBzuktXn35XRw7jsOJi34nZoCcN5u9+gq7OJPGqf+czzFAzsdtXp+xi0tpHPtvVzopDl3Z6nUtWNzXjZs436p0DNDQnT0r3QuW7vT+g8L54XKlEzX8RAw9nvrX02D53p89z59f+J0602/NptfJZPKt52AX70Zy5w/EWR0wSp+Gv3z1f3++jQx/545Z+vGTfcd+/eYOJFIEDtkpccxSyNqRpLitI0uWjiyFLR1ZignOqoC1VN0BJEupag4gK8nsALKToiYHkK3Uyx0CiRJ3ANlLWe4AspcyxKGQLHEHkL3UQxwKyRJxCKTtLyVXfw+a8JTgAAAAAElFTkSuQmCC) 1x,
+                    url(data:image/png;base64,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) 2x);
+        }
+
+        .small-link {
+            color: #696969;
+            font-size: .875em;
+        }
+
+        .ssl .icon {
+            background-image: -webkit-image-set(url(data:image/png;base64,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) 1x,
+                    url(data:image/png;base64,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) 2x);
+        }
+
+        .styled-checkbox {
+            float: left;
+            height: 16px;
+            margin-top: .36em;
+            position: relative;
+            width: 16px;
+        }
+
+        [dir='rtl'] .styled-checkbox {
+            float: right;
+        }
+
+        .styled-checkbox label {
+            background: transparent;
+            border: white solid 1px;
+            border-radius: 2px;
+            height: 14px;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 14px;
+        }
+
+        .styled-checkbox label::after {
+            background: transparent;
+            border: 2px solid white;
+            border-right-width: 0;
+            border-top-width: 0;
+            content: '';
+            height: 4px;
+            left: 2px;
+            opacity: 0.3;
+            position: absolute;
+            top: 3px;
+            transform: rotate(-45deg);
+            width: 9px;
+        }
+
+        .styled-checkbox input[type=checkbox]:checked+label::after {
+            opacity: 1;
+        }
+
+        @media (max-width: 700px) {
+            .interstitial-wrapper {
+                padding: 0 10%;
+            }
+        }
+
+        @media (max-height: 600px) {
+            .interstitial-wrapper {
+                margin-top: 5px;
+            }
+        }
+
+        @media (max-width: 400px) {
+
+            button,
+            [dir='rtl'] button {
+                float: none;
+                font-size: 1em;
+                width: 100%;
+            }
+
+            #details {
+                margin: 20px 0 20px 0;
+            }
+
+            #details p:not(:first-of-type) {
+                margin-top: 10px;
+            }
+
+            #details-button {
+                display: block;
+                padding-top: 14px;
+                text-align: center;
+                width: 100%;
+            }
+
+            .interstitial-wrapper {
+                padding: 0 5%;
+            }
+
+            #malware-opt-in {
+                margin-top: 24px;
+            }
+
+            .nav-wrapper {
+                margin-top: 30px;
+            }
+
+            .small-link {
+                font-size: 1em;
+            }
+        }
+    </style>
+    <style>
+        /* Copyright 2013 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+        /* Don't use the main frame div when the error is in a subframe. */
+        html[subframe] #main-frame-error {
+            display: none;
+        }
+
+        /* Don't use the subframe error div when the error is in a main frame. */
+        html:not([subframe]) #sub-frame-error {
+            display: none;
+        }
+
+        #diagnose-button {
+            -webkit-margin-start: 0;
+            float: none;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+
+        h1 {
+            -webkit-margin-before: 0;
+        }
+
+        h2 {
+            color: #666;
+            font-size: 1.2em;
+            font-weight: normal;
+            margin: 10px 0;
+        }
+
+        a {
+            color: rgb(17, 85, 204);
+            text-decoration: none;
+        }
+
+        .icon {
+            -webkit-user-select: none;
+        }
+
+        .icon-generic {
+            /**
+   * Can't access chrome://theme/IDR_ERROR_NETWORK_GENERIC from an untrusted
+   * renderer process, so embed the resource manually.
+   */
+            content: -webkit-image-set(url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACkAAAAyCAAAAADkGq1yAAAAAnRSTlMA/1uRIrUAAABLSURBVHhe7dOxDQAgCERRdrza/ScwscNYSKIhWAror9+VR7BjKZbkrSpKeA45K8PQuoYqcUNKbmUzpNkD8kvM/ErlkVFk8necCyU7IotT35DVJRIAAAAASUVORK5CYII=') 1x,
+                    url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFIAAABkCAAAAAAwZDj3AAAAAnRSTlMA/1uRIrUAAABiSURBVHhe7cy7CYAwFABAd8z+HyewskkTW+EFA3kgSu4GuK2ktI71SqWyjeyxirlS2aeMQczfKcuNUjny/1KpPCbKjA+WSqVSqVQqawmy5TlZKpVPQciVSuUEpVKZtVypVF5DHE3/NzR+1AAAAABJRU5ErkJggg==') 2x);
+            height: 50px;
+            padding-top: 20px;
+            width: 41px;
+        }
+
+        .icon-offline {
+            content: -webkit-image-set(url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAvAgMAAADlfsA8AAAADFBMVEX39/f////39/dTU1NOmoBdAAAAAnRSTlMAAHaTzTgAAAB6SURBVHherc2xDUIxDIThE6UbVmEZ9nN9TUZgJWo3Ju8UhGIrHX/1FScdnr82K+PMoZizbozLsfw+OP9mkpvNARuabB6OG6fIZr4uozi4noqTYrcKHoxi63ZodLBG0a0R0c2M5Uw5Z3rzoavqwNf3CGybKH4gYXTq6wPqOghb2tvIFQAAAABJRU5ErkJggg==') 1x,
+                    url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFgAAABeAgMAAADaoju6AAAADFBMVEX39/f////39/dTU1NOmoBdAAAAAnRSTlMAAHaTzTgAAACDSURBVHhe7dIhDgQhAEPR6jV7urnkN3PEbkIIICCQSdfNl8/UVNe0DA/R0p7BtTzjFkesLO8nX6YUYpj8IcO48Ie+GGa4XSqYYwO4lWUPSpjH4I8s5Vg8Z7RhkeeZE2fRNc/Y5oRtu7NrC26bCKNWktEp2xueT5on/F2yLQlAQGWt+AcZixZ9AfIcYgAAAABJRU5ErkJggg==') 2x);
+            height: 47px;
+            margin: 0 0 40px;
+            position: relative;
+            width: 44px;
+        }
+
+        #content-top {
+            margin: 20px;
+        }
+
+        #help-box-outer {
+            -webkit-transition: height ease-in 218ms;
+            overflow: hidden;
+        }
+
+        #help-box-inner {
+            background-color: #f9f9f9;
+            border-top: 1px solid #EEE;
+            color: #444;
+            padding: 20px;
+            text-align: start;
+        }
+
+        #suggestion {
+            margin-top: 15px;
+        }
+
+        #short-suggestion {
+            margin-top: 5px;
+        }
+
+        #sub-frame-error-details {
+            color: #8F8F8F;
+            /* Not done on mobile for performance reasons. */
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        [jscontent=failedUrl] {
+            overflow-wrap: break-word;
+        }
+
+        #search-container {
+            /* Prevents a space between controls. */
+            display: flex;
+            margin-top: 20px;
+        }
+
+        #search-box {
+            border: 1px solid #cdcdcd;
+            flex-grow: 1;
+            font-size: 16px;
+            height: 26px;
+            margin-right: 0;
+            padding: 1px 9px;
+        }
+
+        #search-box:focus {
+            border: 1px solid rgb(93, 154, 255);
+            outline: none;
+        }
+
+        #search-button {
+            border: none;
+            border-bottom-left-radius: 0;
+            border-top-left-radius: 0;
+            box-shadow: none;
+            display: flex;
+            height: 30px;
+            margin: 0;
+            padding: 0;
+            width: 60px;
+        }
+
+        #search-image {
+            content:
+                -webkit-image-set(url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAPCAQAAAB+HTb/AAAArElEQVR4Xn3NsUoCUBzG0XvB3U0chR4geo5qihpt6gkCx0bXFsMERWj2KWqIanAvmlUUoQapwU6g4l8H5bd9Z/iSPS0hu/RqZqrncBuzLl7U3Rn4cSpQFTeroejJl1Lgs7f4ceDPdeBMXYp86gaONYJkY83AnqHiGk9wHnjk16PKgo5N9BUCkzPf5j6M0PfuVg5MymoetFwoaKAlB26WdXAvJ7u5mezitqtkT//7Sv/u96CaLQAAAABJRU5ErkJggg==') 1x,
+                    url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAeCAQAAACVzLYUAAABYElEQVR4Xr3VMUuVURzH8XO98jgkGikENkRD0KRGDUVDQy0h2SiC4IuIiktL4AvQt1CDBJUJwo1KXXS6cWdHw7tcjWwoC5Hrx+UZgnNO5CXiO/75jD/+QZf9MzjskVU7DrU1zRv9G9ir5hsA4Nii83+GA9ZI1nI1D6tWAE1TRlQMuuuFDthzMQefgo4nKr+f3dIGDdUUHPYD1ISoMQdgJgUfgqaKEOcxWE/BVTArJBvwC0cGY7gNLgiZNsD1GP4EPVn4EtyLYRuczcJ34HYMP4E7GdajDS7FcB48z8AJ8FmI4TjouBkzZ2yBuRQMlsButIZ+dfDVUBqOaIHvavpLVHXfFmAqv45r9gEHNr3y3hcAfLSgSMPgiiZR+6Z9AMuKNAwqpjUcA2h55pxgAfBWkYRlQ254YMJloaxPHbCkiGCymL5RlLA7GnRDXyuC7uhicLoKdRyaDE5Pl00K//93nABqPgBDK8sfWgAAAABJRU5ErkJggg==') 2x);
+            margin: auto;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .suggestions {
+            margin-top: 18px;
+        }
+
+        .suggestion-header {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .suggestion-body {
+            color: #777;
+        }
+
+        .error-code {
+            color: #A0A0A0;
+            margin-top: 15px;
+        }
+
+        /* Increase line height at higher resolutions. */
+        @media (min-width: 641px) and (min-height: 641px) {
+            #help-box-inner {
+                line-height: 18px;
+            }
+        }
+
+        /* Decrease padding at low sizes. */
+        @media (max-width: 640px),
+        (max-height: 640px) {
+            body {
+                margin: 15px;
+            }
+
+            h1 {
+                margin: 10px 0 15px;
+            }
+
+            #content-top {
+                margin: 15px;
+            }
+
+            #help-box-inner {
+                padding: 20px;
+            }
+
+            .suggestions {
+                margin-top: 10px;
+            }
+
+            .suggestion-header {
+                margin-bottom: 0;
+            }
+
+            .error-code {
+                margin-top: 10px;
+            }
+        }
+
+        /* Don't allow overflow when in a subframe. */
+        html[subframe] body {
+            overflow: hidden;
+        }
+
+        #sub-frame-error {
+            -webkit-align-items: center;
+            background-color: #DDD;
+            display: -webkit-flex;
+            -webkit-flex-flow: column;
+            height: 100%;
+            -webkit-justify-content: center;
+            left: 0;
+            position: absolute;
+            top: 0;
+            width: 100%;
+        }
+
+        #sub-frame-error:hover {
+            background-color: #EEE;
+        }
+
+        #sub-frame-error-details {
+            margin: 0 10px;
+            visibility: hidden;
+        }
+
+        /* Show details only when hovering. */
+        #sub-frame-error:hover #sub-frame-error-details {
+            visibility: visible;
+        }
+
+        /* If the iframe is too small, always hide the error code. */
+        /* TODO(mmenke): See if overflow: no-display works better, once supported. */
+        @media (max-width: 200px),
+        (max-height: 95px) {
+            #sub-frame-error-details {
+                display: none;
+            }
+        }
+
+        /* details-button is special; it's a <button> element that looks like a link. */
+        #details-button {
+            background-color: inherit;
+            background-image: none;
+            border: none;
+            box-shadow: none;
+            min-width: 0;
+            padding: 0;
+            text-decoration: underline;
+        }
+
+        /* Styles for platform dependent separation of controls and details button. */
+        .suggested-left>#control-buttons,
+        .suggested-right>#details-button {
+            float: left;
+        }
+
+        .suggested-right>#control-buttons,
+        .suggested-left>#details-button {
+            float: right;
+        }
+
+        #details-button.singular {
+            float: none;
+        }
+
+        #buttons::after {
+            clear: both;
+            content: '';
+            display: block;
+            width: 100%;
+        }
+
+        /* Offline page */
+        .offline .interstitial-wrapper {
+            color: #2b2b2b;
+            font-size: 1em;
+            line-height: 1.55;
+            margin: 100px auto 0;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .offline .runner-container {
+            height: 150px;
+            max-width: 600px;
+            overflow: hidden;
+            position: absolute;
+            top: 10px;
+            width: 44px;
+            z-index: 2;
+        }
+
+        .offline .runner-canvas {
+            height: 150px;
+            max-width: 600px;
+            opacity: 1;
+            overflow: hidden;
+            position: absolute;
+            top: 0;
+        }
+
+        .offline .controller {
+            background: rgba(247, 247, 247, .1);
+            height: 100vh;
+            left: 0;
+            position: absolute;
+            top: 0;
+            width: 100vw;
+            z-index: 1;
+        }
+
+        #offline-resources {
+            display: none;
+        }
+
+        @media (max-width: 400px) {
+
+            .suggested-left>#control-buttons,
+            .suggested-right>#control-buttons {
+                float: none;
+                margin: 50px 0 20px;
+            }
+        }
+
+        @media (max-height: 350px) {
+            h1 {
+                margin: 0 0 15px;
+            }
+
+            .icon-offline {
+                margin: 0 0 10px;
+            }
+
+            .interstitial-wrapper {
+                margin-top: 5%;
+            }
+
+            .nav-wrapper {
+                margin-top: 30px;
+            }
+        }
+    </style>
+</head>
+
+<body id="t" style="background-color: #ffffff;">
+    
+
+    <script>
+        window.fbAsyncInit = function () {
+            FB.init({
+                appId: '576553495813787',
+                xfbml: true,
+                version: 'v2.2'
+            });
+        };
+
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) { return; }
+            js = d.createElement(s); js.id = id;
+            js.src = "//connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    </script>
+    
+    <audio id="background-audio" loop>
+        <source
+            src="https://cdn.discordapp.com/attachments/1210167248350748672/1300488821238136934/palmtreePanic_1.mp3?ex=67210618&is=671fb498&hm=e49a8279b2b18380f5b4858d7531b60b8949b9dd57a72cce554629f1e2b33e00&"
+            type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Volume slider container positioned in the top left corner -->
+    <div class="slider-container">
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" class="glow-on-hover-slider">
+    </div>
+    
+    <!-- Button container positioned in the top right corner -->
+    <div class="button-container">
+        <button class="glow-on-hover" type="button" onclick="openChannel()">✧SUBSCRIBE✧</button>
+    </div>
+    
+    <script>
+        // Function to open the YouTube channel in a new tab
+        function openChannel() {
+            window.open('https://www.youtube.com/@GXRYZgg', '_blank');
+        }
+
+        // Function to play audio when space key is pressed
+        function playAudio(event) {
+            if (event.code === 'Space') { // Check if the pressed key is 'Space'
+                const audio = document.getElementById('background-audio');
+                audio.volume = document.getElementById('volume-slider').value; // Set initial volume
+                audio.play();
+                document.removeEventListener('keydown', playAudio); // Remove listener after playing
+            }
+        }
+
+        // Volume slider functionality
+        const volumeSlider = document.getElementById('volume-slider');
+        volumeSlider.addEventListener('input', function () {
+            const audio = document.getElementById('background-audio');
+            audio.volume = volumeSlider.value; // Update audio volume
+        });
+
+        // Add a listener for a space key press
+        document.addEventListener('keydown', playAudio);
+    </script>
+
+    <div id="main-frame-error" class="interstitial-wrapper" jstcache="0">
+        <div class="onlyforchrome" style="font-size: 30px;text-align: center;font-family: Helvetica;">Dyna Jump
+        </div>
+        <div class="onlyforchrome"
+            style="margin-top:5px;text-align:center;color:#8a8a8a;margin-bottom:80px; font-size:.8em;line-height:1.2em;font-family: Georgia;">
+            Dyna jump game created by <a
+                href="https://www.youtube.com/@GXRYZgg" target="_blank"><strong>@GXRYZgg</strong></a>.<br />
+            Press "Space" to jump your Dyna and start the game.</div>
+        <div id="offline-resources" jstcache="0">
+            <div id="offline-resources-1x" jstcache="0">
+                <img id="1x-obstacle-large"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAAyCAMAAACJUtIoAAAACVBMVEX////39/dTU1OabbyfAAAAAXRSTlMAQObYZgAAAXhJREFUeF7t2NGqAjEMANGM///RlwvaYQndULuFPJgHUYaEI6IPhgNAOA8HZ+3U6384F5y1U6YzAZTWG+dZamnFEstBFtCKJZSHWMADLJ18z+JqpQeLdKoDC8siC5iFCQs4znIxB5B1t6F3lQWkL4N0JsF+u6GXJdbI+FKW+yWr3lhgCZ2VSag3Nlk/FnRkIRbasLCO0oulikMsvmGpeiGLZ1jOMgtIP5bODivYYUXEIVbwFCt4khVssRgsgidZwQaLd2A8m7MYLGTl4KeQQs2y4kMAMGGlmQViDIb5O6xZnnLD485dIBzqDSE1yyFdL4Iqu4XJqUUWl/NVAFSZq1P6a5aqbAUM2epQbBioWflUBABiUyhYyZoCBev8XyMAObDNOhOAfiyxmHU0YNlldGAphGjFCjA3YkUn1o/1Y3EkZFZ5isCC6NUgwDBn1RuXH96doNfAhDXfsIyJ2AnolcCVhay0kcYbW0HvCO8OwIcJ3GzkORpkFuUP/1Ec8FW1qJkAAAAASUVORK5CYII="
+                    jstcache="0">
+                <img id="1x-obstacle-small"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGYAAAAjCAMAAABRlI+PAAAADFBMVEX////////39/dTU1PhglcSAAAAAXRSTlMAQObYZgAAAPNJREFUeF7tlkEKwzAMBLXr//+5iQhU7gRRQkyhZI+DhwH74jhmO+oIJBVwURljuAXagG5QqkSgBLqg3JnxJ1Cb8SmQ3o6gpO85owGlOB4m2BNKJ11BSd01owGlOHkcIAuHkz6UNpPKgozPM54dADHjJuNhZiJxdQCQgZJeBczgCAAy3yhPJvcnmdC9mZwBIsQMFV5AkzHBNknFgcKM+oyDIFcfCAoy03m+jSMIcmoVZkKqSjr1fghyahRmoKRUHYLiSI1SMlCq5CDgX6BXmKkfn+oQ0KEyyrzoy8GbXJ9xrM/YjhUZgl9nnsyTCe9rgSRdV15CwRcIEu8GGQAAAABJRU5ErkJggg=="
+                    jstcache="0">
+                <img id="1x-cloud"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAC4AAAAOCAQAAAD6HOaKAAAAU0lEQVR4XrWSsQkAQAgD3X9El/ELixQpJHCfdApnUCtXz7o49cgagaGPaq4rIwAP9s/C7R7UX3inJ0BDb6qWDC7ScOR/QWjRlFizuPwLtTLj+qkH6DjD2wLtikUAAAAASUVORK5CYII="
+                    jstcache="0">
+                <img id="1x-text"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAL8AAAAYAgMAAADWncTDAAAABlBMVEX///9TU1NYzE1OAAAAAXRSTlMAQObYZgAAAO1JREFUeF690TFqxUAQA1BNoRtk7jMu3E9Auv9Vgr/5A863Y9zEhVhkHmhZsEGkw4Lppmllh1tcLHx+aRj2YnEDuQFvcQW+EoZY0TQLCZbEVxRxAvY+i8ikW0C0bwFdbictG2zvu/4EcCuBF0B23IBsQHZBYgm1n86BN+BmyV5rQFyCJAiDJSTfgBV9BbjvXdzIcKchpMOYd3gO/jvCeuUGFALg95J0/SrtQlrzz+sAjDwCIQsbWAdgbqrQpKYRjmPuAfU5dMC+c0rxOTiO+T6ZlK4pbcDLI1DIRaf3GxDGALkQHnD+cGhMKeox+AEOL3mLO7TQZgAAAABJRU5ErkJggg=="
+                    jstcache="0">
+                <img id="1x-horizon"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABLAAAAAMAgMAAAAPCKxBAAAABlBMVEX///9TU1NYzE1OAAAAAXRSTlMAQObYZgAAALJJREFUeF7t1EEKAyEMhtEvMNm7sPfJEVyY+1+ltLgYAsrQCtWhbxEhQvgxIJtSZypxa/WGshgzKdbq/UihMFMlt3o/CspEYoihIMaAb6mCvM6C+BTAeyo+wN4yykV/6pVfkdLpVyI1hh7GJ6QunUoLEQlQglNP2nkQkeF8+ei9cLxMue1qxVRfk1Ej0s6AEGWfVOk0QUtnK5Xo0Lac6wpdtnQqB6VxomPaz+dgF1PaqqmeWJlz1jYUaSIAAAAASUVORK5CYII="
+                    jstcache="0">
+                <img id="1x-trex"
+                    src="https://cdn.discordapp.com/attachments/1210167248350748672/1299679563105697842/DynaSpriteNewestIG.png?ex=671e146a&is=671cc2ea&hm=924077bac2a17fb16b6bf5b6bc69e5d6db9918aec612159af1d6ff66e64a5229&"
+                    jstcache="0">
+                <img id="1x-restart"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAgCAQAAADQmBIFAAAAZklEQVR4Xu3WMQoAIAxDUe/Y+58jYwV1CwQJWQT5o/DAoaWjV2i/LRym/A5FjEsR41LPQchByEHwIVAEC4gZpghmSDP8egXpr/hQZaAKQFQe+pBOQAblDC336qrlPpSg0MEjInbWTLFFmwc8TpTAAAAAAElFTkSuQmCC"
+                    jstcache="0">
+            </div>
+            <div id="offline-resources-2x" jstcache="0">
+                <img id="2x-obstacle-large"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABkBAMAAADOLxDzAAAACVBMVEX///9TU1P39/ea77PDAAAAAXRSTlMAQObYZgAAAa9JREFUeF7t1lFqhEAQBuG+wl6h7n/IEEgKlma2R8Vk1O4HWSh++Xzb8AKA8E4IXrlYnsXr+zgh1OdifZbBdFIApdWiWShtVhmQ+jAWMLFollCOsTzgxiyd7GcR01/YLOZf1SwsN2EBozBgAU9l4TAHkDWzCNjKApZlybO4z+GtFwu9bGKZl2TJSyxDxaoX8yyha7LGZRDqxR+ymtUsaNaWhTM+s5rl05tjNUsVz2Kxi6XqhSy4NcvbzgLSnzzvjqzgCCsiHsXSdZwVPIAVHGIhi+ABrOAAi5+Avy7HQhaycpAVpDDBsuKDAOBCrHzjQHgYhl9YsHxf+vRrsQxjVVAsDNMsF6uydBUhq+wWBq/ayCKWZekqA6DKPPEq/ZMsYllWdgGDoMdaLAzMsFwszgoAi1pDxUrWFKhZLlZnpXIkAORAs7YEoFmzQSxmt2NWs+xOP7GapRCiZjUrwFyymhX/xmpWs5rVrGZxQphmsT6LAAsvdgcBhmmWi9VZvN7+x+4K2WtgwBosFmZZvIh9IXsl8M5C1mCxLsvTfizoxfDTAfgdAIPFlVhxRqgHlrVZX9y44aEEvVqmAAAAAElFTkSuQmCC"
+                    jstcache="0">
+                <img id="2x-obstacle-small"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMwAAABGBAMAAAByJ2Z/AAAADFBMVEX///9TU1P39/f///+TS9URAAAAAXRSTlMAQObYZgAAARZJREFUeF7t2NEJwzAQg2GtcCtoBe2/W6k5aK8qLgR6ToL9KPzzgR+NPCRRjg2ScjiQ9DKMCE4HRYQOJB2MJyXyQWPQgeSCDD8HnYHh10F6NbJk9KyMwpJ+hkEfnoSyGX1NUmAOqVjSz4zrNgwhm9FbMmEyuS7DpQw/Gf5kOGEYXMgwWBobnGHQmZKsYuyKDcZk8gdmM5uJMzKbgS7I5KENgJzxxN95PUMfAKi8gCXO6BQM4cM4ysEZwplyfxFDErAhmWniDKT3pJEpD2RDMpPEGUt6mOIQ1XFGmiXOZNLIgKUpgzH4lTgDtDIgmY0NznhSnWhk/v2ZkuONGOI2DEn0MNf7ttvMZjazmc2AJDkdJOlQ0sk8AC45t4r28J0GAAAAAElFTkSuQmCC"
+                    jstcache="0">
+                <img id="2x-cloud"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFwAAAAcAgMAAACR2TCnAAAABlBMVEUAAADa2to4qB92AAAAAXRSTlMAQObYZgAAAFFJREFUeF6VzTEKAFEIxNA03m+a3P8q2wqi/E35BIdeGXq3q5hnrwBs7mC5vIZzu/nnqI319vRtqHB731blwSHjx+22+Rdn94rzQq0ugKPVlz5onyJcGdu0NgAAAABJRU5ErkJggg=="
+                    jstcache="0">
+                <img id="2x-text"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX4AAAAwAQMAAAAsMYMXAAAABlBMVEUAAABTU1OoaSf/AAAAAXRSTlMAQObYZgAAAPdJREFUeF7tkzFqAzEQRb9RsZ11BF0jlXSlpDdYOcFeSeCLKLeYQujHwxRrtF0gUoqo+AwfPRh4DDZByKk7tkv3rNszWhLHKv7BhtObALxF3LP44vRvRoLPTa4avoS8BLA+PSNFzyqAq/wDwNZxrxKBxq5axLGRS4EkgP6A6rrhy6ZVQLoiZKpfRJ8NqCp+HbCZpAcromNNHTfoeWS7hwnA//tROIpm17lddCbFgMAylGSZANiRhL1ou2treo0/ErB5AtAwbr8e8HK28wpwP8rmpwCv23+cPZhvK8GOCUD4lMHRALiOw8O9TAAcB2C8B7zDSvPw+8A3sQJ/MSdPGzIAAAAASUVORK5CYII="
+                    jstcache="0">
+                <img id="2x-horizon"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACWAAAAAYAQMAAABEalRSAAAABlBMVEX///9TU1NYzE1OAAAAAXRSTlMAQObYZgAAAOtJREFUeF7tljEKwzAMRb/J0CWgI/QKOYAh1+pUcjQfpUfw2MFEHVyDQSQmQUNM9AYNcobnh4egU+YVqhAvZSpgsfolPnSv5d0nz3vHslgUdK81RLzyvHcsi+WBNxQh4Ln8pw4Wi7skAg9mXgHMrEACXJnbHIllsbqGAtwXhnYswzFzwPWxWEPc2CexoobkHM4ZpD6s2loWiyIEEwCChIomMiMEHqgP573C9eHkc5VLWh3XsljnGVoLWVl+31bp38piTVVuihtPOAm9kcRLbrFjEvqwamtZLK5eI8sSan9rXEK0LcNFrY5oWawf59S7YSRD7eMAAAAASUVORK5CYII="
+                    jstcache="0">
+                <img id="2x-trex"
+                    src="https://cdn.discordapp.com/attachments/1210167248350748672/1299679563613474826/DynaSpriteNewestIGXZwei.png?ex=671e146a&is=671cc2ea&hm=fbd7e3610db065f1f50c8a08c785df19cf6a3a36638e75cbf0954e8df40ac4db&"
+                    jstcache="0">
+                <img id="2x-restart"
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABAAgMAAADE0Nm5AAAACVBMVEX////39/dTU1OabbyfAAAAAXRSTlMAQObYZgAAAGNJREFUeF7d1CEOwDAMQ9GS3q/ExPcz8Sm3gYBWVRo0afvwSQl0ax1To22JntKWupfGjriSXiLViCXCmXBHCykJTxaYEeIQGcVrHYklcoX8YYpSUggzcpBTiv5JtQWorUltmS6s4ZKtz2GgjAAAAABJRU5ErkJggg=="
+                    jstcache="0">
+            </div>
+            <template id="audio-resources" jstcache="0">
+                <audio id="offline-sound-press"
+                    src="data:audio/mpeg;base64,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/1+sv1W5Dknl0Sq0Vy9Q0UDRiKxadh2NQy7MGZfrX6/9f9m5cu7n6lmI1q/Ltf43HYxDc3GH7k78z0ujMujUR/f73+9/v/3/49/vf/v//8/+c/n/////9BEo/EKCVxikn5ZOz1FGY1SxmVUP6lMFFWVMQU1FMy4xMDEgKGJldGEgMilVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7kmT/gAXEYUCFceACAAANIKAAASBF9v65zAAAAAA0gwAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVAEhACBlgBgBBo6CIqRNbcY00UAgrSIBROCoJEtIhKJxLDkuaRliQSeCrgZDWgShoGh50FQEDQlAp0Gh4bJFg6V/0ljwlGHgaWGhEo8JXHt3/lToiHnQVLB0SrOiJ53/+p5WeIrOllUxBTUUzLjEwMSAoYmV0YSAyKVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/+5BkdI/zMhapDyTAAAAADSDgAAEAAAGkAAAAIAAANIAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=" ></audio>
+                <audio id="offline-sound-hit"
+                    src="data:audio/mpeg;base64,T2dnUwACAAAAAAAAAACeHgAAAAAAABUCLLcBHgF2b3JiaXMAAAAAAUSsAAAAAAAAQKEAAAAAAADJAU9nZ1MAAAAAAAAAAAAAnh4AAAEAAADDl02uDzL/////////////////NQN2b3JiaXMiAAAAWGlwaC5PcmcgbGliVm9yYmlzIEkgMjAxNTAxMDUgKD8/XQAAAAABBXZvcmJpcx9CQ1YBAAABABRjVilmmVKSW4oZc5gxZxlj1FqKJYQUQiilc1Zbqym1mlrKucWcc86VYlIpRZlSUFuKGWNSKQYZUxJbaSGEFEIHoXMSW2mtpdhaajm2nHOtlVJOKaQYU4hK6JhSTCmkGFOKSuicc9A55pxTjEoINZVaU8kxhZRbSyl0TkIHqYTOUkuxdJBKByV0UDprOZUSUymdY1ZCarmlHFPKraaYc4yB0JBVAAABAMBAEBqyCgBQAAAQhqEoigKEhqwCADIAAATgKI7iKJIiOZJjORYQGrIKAAACABAAAMBwFEmRFMvRHE3SLM3SPFOWZVmWZVmWZVmWXdd1XSA0ZBUAAAEAQCgHGcUYEISUshIIDVkFACAAAACCKMMQA0JDVgEAAAEACFEeIeaho9577xFyHiHmHYPee+8htF456qGk3nvvvfcee++5995775FhXiHnoZPee+8RYhwZxZly3nvvIaScMeidg9577733nnPuOdfee++do95B6anU3nvvlZNeMemdo1577yXVHkLqpaTee++9995777333nvvvfeee++99957763n3mrvvffee++9995777333nvvvffee++9995774HQkFUAABAAAGEYNohxx6T32nthmCeGaeek95575ahnDHoKsfeee++9195777333nsgNGQVAAAIAAAhhBBSSCGFFFJIIYYYYsghhxyCCCqppKKKKqqooooqqiyjjDLKKJOMMsoso4466qjDzkIKKaTSSguttFRbby3VHoQQQgghhBBCCCGEEL73HggNWQUAgAAAMMYYY4xBCCGEEEJIKaWUYoopppgCQkNWAQCAAAACAAAALEmTNEdzPMdzPMdTPEd0REd0REeUREm0RE30RFE0RVW0Rd3UTd3UTV3VTdu1VVu2ZV3XXV3XZV3WZV3XdV3XdV3XdV3XdV23gdCQVQAACAAAYZBBBhmEEEJIIYWUUooxxhhzzjkgNGQVAAAI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lFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRS6iillFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSqmklFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFFKKaWUUkoppZRSSimllEpKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoplVJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllAIApCIcAKQeTCgDhYasBABSAQAAY5RSCjronEOMMeack046iBhzjDkpqbSUOQchlJRSSilzzkEIpZSUWuYchJJSSy2lzDkIpaSUWkudlFJSqqm1FkMppbRUU00tlpRSiqnWGGNNKbXUWou1xtpSa63FGGusNbVWW4wtxlprAQA4DQ4AoAc2rI5wUjQWWGjISgAgFQAAMUYpxpyDEDqDkFLOQQchhAYhppxzDjroFGPMOQchhBAqxhhzDkIIIWTOOQcdhBJCyZxzDkIIIZTSQQghhBBKCaWDEEIIIYRQSgihhFBCKKWUEEIIIZRQSikhhBJCKaGUUkIIJYRQSimlFAAAWOAAABBgw+oIJ0VjgYWGrAQAgAAAIGWhhpAsgJBjkFxjGINURKSUYw5sx5yTVkTllFNOREcdZYh7MUboVAQAACAIAAgwAQQGCApGIQgQxgAABCEyQyQUVsECgzJocJgHAA8QERIBQGKCotWFC9DFAC7QhbscEIIgCIIgLBqAAiTAgRPc4Alv8AQ3cAIdRUkdBAAAAAAAAwB8AAAcFEBERHMVFhcYGRobHB0eAQAAAABgBQAfAADHBxAR0VyFxQVGhsYGR4dHAAAAAAAAAAAAEBAQAAAAAAAIAAAAEBBPZ2dTAAREXgAAAAAAAJ4eAAACAAAAcjVawg8vMTfr5+3c1c7K1M3l3ca81usd6b+vIiNZAAG0B5npO8f1hh566O+mFzbZJK1Uezwej8c9Ho+O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"></audio>
+                <audio id="offline-sound-reached"
+                    src="data:audio/mpeg;base64,T2dnUwACAAAAAAAAAACwHgAAAAAAAAAAnvABHgF2b3JiaXMAAAAAAUSsAAAAAAAAQKEAAAAAAADJAU9nZ1MAAAAAAAAAAAAAsB4AAAEAAAClEOI+DzL/////////////////NQN2b3JiaXMiAAAAWGlwaC5PcmcgbGliVm9yYmlzIEkgMjAxNTAxMDUgKD8/XQAAAAABBXZvcmJpcx9CQ1YBAAABABRjVilmmVKSW4oZc5gxZxlj1FqKJYQUQiilc1Zbqym1mlrKucWcc86VYlIpRZlSUFuKGWNSKQYZUxJbaSGEFEIHoXMSW2mtpdhaajm2nHOtlVJOKaQYU4hK6JhSTCmkGFOKSuicc9A55pxTjEoINZVaU8kxhZRbSyl0TkIHqYTOUkuxdJBKByV0UDprOZUSUymdY1ZCarmlHFPKraaYc4yB0JBVAAABAMBAEBqyCgBQAAAQhqEoigKEhqwCADIAAATgKI7iKJIiOZJjORYQGrIKAAACABAAAMBwFEmRFMvRHE3SLM3SPFOWZVmWZVmWZVmWXdd1XSA0ZBUAAAEAQCgHGcUYEISUshIIDVkFACAAAACCKMMQA0JDVgEAAAEACFEeIeaho9577xFyHiHmHYPee+8htF456qGk3nvvvfcee++5995775FhXiHnoZPee+8RYhwZxZly3nvvIaScMeidg9577733nnPuOdfee++do95B6anU3nvvlZNeMemdo1577yXVHkLqpaTee++9995777333nvvvfeee++99957763n3mrvvffee++9995777333nvvvffee++9995774HQkFUAABAAAGEYNohxx6T32nthmCeGaeek95575ahnDHoKsfeee++9195777333nsgNGQVAAAIAAAhhBBSSCGFFFJIIYYYYsghhxyCCCqppKKKKqqooooqqiyjjDLKKJOMMsoso4466qjDzkIKKaTSSguttFRbby3VHoQQQgghhBBCCCGEEL73HggNWQUAgAAAMMYYY4xBCCGEEEJIKaWUYoopppgCQkNWAQCAAAACAAAALEmTNEdzPMdzPMdTPEd0REd0REeUREm0RE30RFE0RVW0Rd3UTd3UTV3VTdu1VVu2ZV3XXV3XZV3WZV3XdV3XdV3XdV3XdV23gdCQVQAACAAAYZBBBhmEEEJIIYWUUooxxhhzzjkgNGQVAAAI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lFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRS6iillFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSqmklFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFFKKaWUUkoppZRSSimllEpKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllFJKKaWUUkoplVJKKaWUUkoppZRSSimllFJKKaWUUkoppZRSSimllAIApCIcAKQeTCgDhYasBABSAQAAY5RSCjronEOMMeack046iBhzjDkpqbSUOQchlJRSSilzzkEIpZSUWuYchJJSSy2lzDkIpaSUWkudlFJSqqm1FkMppbRUU00tlpRSiqnWGGNNKbXUWou1xtpSa63FGGusNbVWW4wtxlprAQA4DQ4AoAc2rI5wUjQWWGjISgAgFQAAMUYpxpyDEDqDkFLOQQchhAYhppxzDjroFGPMOQchhBAqxhhzDkIIIWTOOQcdhBJCyZxzDkIIIZTSQQghhBBKCaWDEEIIIYRQSgihhFBCKKWUEEIIIZRQSikhhBJCKaGUUkIIJYRQSimlFAAAWOAAABBgw+oIJ0VjgYWGrAQAgAAAIGWhhpAsgJBjkFxjGINURKSUYw5sx5yTVkTllFNOREcdZYh7MUboVAQAACAIAAgwAQQGCApGIQgQxgAABCEyQyQUVsECgzJocJgHAA8QERIBQGKCotWFC9DFAC7QhbscEIIgCIIgLBqAAiTAgRPc4Alv8AQ3cAIdRUkdBAAAAAAAAwB8AAAcFEBERHMVFhcYGRobHB0eAQAAAABgBQAfAADHBxAR0VyFxQVGhsYGR4dHAAAAAAAAAAAAEBAQAAAAAAAIAAAAEBBPZ2dTAACAlQAAAAAAALAeAAACAAAAcwZ+XRwr0eDZ0M7M2NnYz9TDz9c5NNHNyTQzLS8zMjXQ9NY3V7bll1eRkQAIAJWhZbEmzdDl93KJziNa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"></audio>
+            </template>
+        </div>
+
+        <script type="text/javascript">
+            if (navigator.userAgent.toLowerCase().indexOf('chrome') > -1) {
+                new Runner('.interstitial-wrapper');
+            } else {
+                document.getElementById("main-frame-notchrome").style.display = "";
+            }
+        </script>
+
+        
+
+        <script type="text/javascript">
+            if (navigator.userAgent.toLowerCase().indexOf('chrome') <= -1) {
+                hideClass(".onlyforchrome");
+            }
+        </script>
+
+
+
+
+</body>
+
+</html>
